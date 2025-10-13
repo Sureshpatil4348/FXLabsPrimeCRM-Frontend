@@ -1,12 +1,12 @@
 # Partner Admin Dashboard
 
-A modern web application built with Next.js for managing influencer partnerships, referrals, and administrative tasks. This dashboard provides separate interfaces for administrators and partners, featuring user management, referral tracking, performance analytics, and more.
+A modern web application built with Next.js for managing partner partnerships, referrals, and administrative tasks. This dashboard provides separate interfaces for administrators and partners, featuring user management, referral tracking, performance analytics, and more.
 
 ## Overview
 
-This project is a comprehensive influencer management platform that allows:
+This project is a comprehensive partner management platform that allows:
 - **Administrators** to oversee all partners, users, and referrals across the system
-- **Partners** (influencers) to manage their own referrals, view performance reports, and access personalized dashboards
+- **Partners** (partners) to manage their own referrals, view performance reports, and access personalized dashboards
 - Secure authentication with role-based access control
 - Responsive design optimized for both desktop and mobile devices
 
@@ -27,13 +27,13 @@ This project is a comprehensive influencer management platform that allows:
 ```
 ├── app/                          # Next.js App Router pages
 │   ├── admin/                    # Admin-specific pages
-│   │   ├── influencers/          # Influencer management
+│   │   ├── partners/             # Partner management
 │   │   ├── referrals/            # Referral oversight
 │   │   ├── users/                # User management
 │   │   └── page.tsx              # Admin dashboard
 │   ├── login/                    # Authentication pages
 │   │   ├── admin/                # Admin login
-│   │   └── influencer/           # Partner login
+│   │   └── partner/              # Partner login
 │   ├── partners/                 # Partner-specific pages
 │   │   ├── add/                  # Add new referrals
 │   │   ├── magic-link/           # Magic link functionality
@@ -101,7 +101,7 @@ This project is a comprehensive influencer management platform that allows:
 1. Clone the repository:
 ```bash
 git clone <repository-url>
-cd influencer-admin-dashboard
+cd FXLabsPrimeCRM-Frontend
 ```
 
 2. Install dependencies:
