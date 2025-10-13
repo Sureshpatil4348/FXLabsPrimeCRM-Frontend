@@ -1,4 +1,4 @@
-# Influencer Admin Dashboard
+# Partner Admin Dashboard
 
 A modern web application built with Next.js for managing influencer partnerships, referrals, and administrative tasks. This dashboard provides separate interfaces for administrators and partners, featuring user management, referral tracking, performance analytics, and more.
 
