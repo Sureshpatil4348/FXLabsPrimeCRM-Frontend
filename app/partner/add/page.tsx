@@ -51,6 +51,7 @@ function parseCsvEmails(text: string): string[] {
 export default function AddReferralsPage() {
   const { toast } = useToast()
   const [mode, setMode] = useState<Mode>("single")
+  const [loading, setLoading] = useState(false)
 
   // Single mode
   const [single, setSingle] = useState("")
@@ -88,22 +89,45 @@ export default function AddReferralsPage() {
     }
   }
 
-  function handleSave() {
+  async function handleSave() {
     if (combinedPreview.length === 0) {
       toast({ title: "No valid emails to add", variant: "destructive" })
       return
     }
-    const key = "partner:emails"
-    const raw = window.localStorage.getItem(key)
-    const existing: string[] = raw ? JSON.parse(raw) : []
-    const merged = normalizeEmails([...existing, ...combinedPreview])
-    window.localStorage.setItem(key, JSON.stringify(merged))
-    toast({ title: "Saved", description: `${combinedPreview.length} email(s) added.` })
-    if (mode === "single") setSingle("")
-    if (mode === "bulk") setBulk("")
-    if (mode === "csv") {
-      setCsvFile(null)
-      setCsvPreview([])
+    setLoading(true)
+    try {
+      const response = await fetch("/api/create-user", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ emails: combinedPreview }),
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.message || "Failed to create users")
+      }
+
+      const data = await response.json()
+      toast({ 
+        title: "Users created", 
+        description: `Created: ${data.summary.created}, Already exists: ${data.summary.already_exists}, Failed: ${data.summary.failed}` 
+      })
+      if (mode === "single") setSingle("")
+      if (mode === "bulk") setBulk("")
+      if (mode === "csv") {
+        setCsvFile(null)
+        setCsvPreview([])
+      }
+    } catch (error) {
+      toast({ 
+        title: "Error", 
+        description: error instanceof Error ? error.message : "An error occurred", 
+        variant: "destructive" 
+      })
+    } finally {
+      setLoading(false)
     }
   }
 
@@ -217,15 +241,15 @@ export default function AddReferralsPage() {
           </div>
 
           <div className="flex justify-end">
-            <Button onClick={handleSave} disabled={combinedPreview.length === 0}>
-              Save emails
+            <Button onClick={handleSave} disabled={combinedPreview.length === 0 || loading}>
+              {loading ? "Creating..." : "Create users"}
             </Button>
           </div>
         </CardContent>
       </Card>
 
       <p className="text-xs text-muted-foreground">
-        This is a mock UI. Data is saved in your browser only (localStorage: partner:emails).
+        Add prospect emails to create user accounts. Emails will be validated and deduplicated.
       </p>
     </main>
   )

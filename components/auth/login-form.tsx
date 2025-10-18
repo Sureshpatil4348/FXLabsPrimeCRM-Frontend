@@ -8,7 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { useRouter } from "next/navigation"
-import { saveSession, verifyCredentials } from "@/lib/auth"
+import { saveSession, saveAuthTokens } from "@/lib/auth"
 
 type LoginFormProps = {
   role: "admin" | "partner"
@@ -22,15 +22,52 @@ export function LoginForm({ role }: LoginFormProps) {
 
   const title = role === "admin" ? "Admin Login" : "partner Login"
 
-  function onSubmit(e: React.FormEvent) {
+  async function onSubmit(e: React.FormEvent) {
     e.preventDefault()
-    const ok = verifyCredentials(email, password, role)
-    if (!ok) {
-      setError("Invalid email or password for this role.")
-      return
+    setError(null)
+
+    try {
+      const res = await fetch("/api/custom-login", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ email, password, role }),
+      })
+
+      if (!res.ok) {
+        // Try to read error from body if present
+        try {
+          const err = await res.json()
+          setError(err?.message || "Invalid email or password for this role.")
+        } catch {
+          setError("Invalid email or password for this role.")
+        }
+        return
+      }
+
+  const payload = (await res.json()) as { [k: string]: string }
+
+      // API returns either { "Admin-Token": token } or { "Partner-Token": token }
+      const adminToken = payload["Admin-Token"]
+      const partnerToken = payload["Partner-Token"]
+      const token = adminToken || partnerToken
+
+      if (!token) {
+        setError("Malformed response from server. Please try again.")
+        return
+      }
+
+      // Save session (cookies are set by server). Keep token in session for client use.
+      saveSession({ email, role, token })
+      // Optionally mirror to localStorage for admin flows using existing helper
+      if (role === "admin") {
+        saveAuthTokens({ adminToken: token })
+      }
+      router.push(role === "admin" ? "/admin" : "/partner")
+    } catch (err) {
+      setError("Unable to sign in. Please try again.")
     }
-    saveSession({ email, role })
-    router.push(role === "admin" ? "/admin" : "/partner")
   }
 
   return (

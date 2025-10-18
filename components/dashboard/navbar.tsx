@@ -14,7 +14,15 @@ export function Navbar({ onToggleSidebar }: { onToggleSidebar?: () => void }) {
     setSession(getSession())
   }, [])
 
-  function handleLogout() {
+  async function handleLogout() {
+    try {
+      // Call logout API to clear server-side cookies
+      await fetch("/api/logout", { method: "POST" })
+    } catch (error) {
+      console.warn("Logout API call failed:", error)
+    }
+    
+    // Clear client-side session
     signOut()
     setSession(null)
     router.push("/")

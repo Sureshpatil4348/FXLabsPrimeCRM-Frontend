@@ -13,8 +13,9 @@ export function Sidebar({ role, open, onClose }: SidebarProps) {
   const adminItems = [
     { href: "/admin", label: "Dashboard" },
     { href: "/admin/partners", label: "Partners" },
-    { href: "/admin/users", label: "All Users" },
-    { href: "/admin/referrals", label: "All Referrals" }
+    { href: "/admin/create-partner", label: "Create Partner" },
+    { href: "/admin/add-user", label: "Add User" },
+    { href: "/admin/users", label: "All Users" }
   ]
   const partnerItems = [
     { href: "/partner", label: "Dashboard" },

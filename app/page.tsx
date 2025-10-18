@@ -1,8 +1,24 @@
+"use client"
+
+import { useEffect } from "react"
 import Link from "next/link"
+import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { getSession } from "@/lib/auth"
 
 export default function HomePage() {
+  const router = useRouter()
+
+  useEffect(() => {
+    // Check if user is already logged in
+    const session = getSession()
+    if (session) {
+      // Redirect to appropriate dashboard based on role
+      router.push(session.role === "admin" ? "/admin" : "/partner")
+    }
+  }, [router])
+
   return (
     <main className="min-h-dvh flex items-center justify-center p-6">
       <Card className="w-full max-w-md border border-border shadow-sm">
