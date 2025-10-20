@@ -5,39 +5,136 @@ import Link from "next/link"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select"
+import { Badge } from "@/components/ui/badge"
 
-type Ref = { email: string; addedAt?: string; status?: "pending" | "joined" | "converted"; revenue?: number }
+type PartnerUser = {
+  email: string
+  region: string | null
+  subscription_status: string
+  subscription_ends_at: string | null
+  created_at: string
+  converted_at: string | null
+}
+
+type PartnerUsersResponse = {
+  partner_info: {
+    email: string
+    full_name: string | null
+  }
+  users: PartnerUser[]
+  pagination: {
+    current_page: number
+    total_pages: number
+    total_users: number
+    per_page: number
+    has_next_page: boolean
+    has_previous_page: boolean
+  }
+}
 
 export default function MyReferralsPage() {
-  const [rows, setRows] = useState<Ref[]>([])
+  const [data, setData] = useState<PartnerUsersResponse | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
   const [q, setQ] = useState("")
-  const [status, setStatus] = useState<"all" | "pending" | "joined" | "converted">("all")
-  const [minRevenue, setMinRevenue] = useState<string>("")
+  const [status, setStatus] = useState<"all" | "invited" | "active" | "inactive" | "converted">("all")
 
   useEffect(() => {
-    const raw = localStorage.getItem("partner:emails")
-    const data = raw ? (JSON.parse(raw) as string[]) : []
-    const normalized: Ref[] = data.map((email) => ({
-      email,
-      addedAt: new Date().toISOString().slice(0, 10),
-      status: "pending",
-      revenue: 0,
-    }))
-    setRows(normalized)
+    async function fetchPartnerUsers() {
+      try {
+        let headers: HeadersInit | undefined
+        if (typeof window !== "undefined") {
+          try {
+            const raw = localStorage.getItem("tr-auth-tokens")
+            if (raw) {
+              const tokens = JSON.parse(raw) as { authorization?: string; partnerToken?: string }
+              headers = {
+                ...(tokens.authorization ? { Authorization: tokens.authorization } : {}),
+                ...(tokens.partnerToken ? { "Partner-Token": tokens.partnerToken } : {}),
+              }
+            }
+          } catch {}
+        }
+
+        const res = await fetch("/api/get-partner-users-by-partner", { headers })
+        if (!res.ok) {
+          const err = await res.json()
+          setError(err.message || "Failed to fetch partner users")
+          return
+        }
+        const result: PartnerUsersResponse = await res.json()
+        setData(result)
+      } catch (err) {
+        setError("Unable to fetch partner users. Please try again.")
+      } finally {
+        setLoading(false)
+      }
+    }
+    fetchPartnerUsers()
   }, [])
 
   const filtered = useMemo(() => {
-    const t = q.trim().toLowerCase()
-    const min = Number.isNaN(Number(minRevenue)) || minRevenue === "" ? 0 : Number(minRevenue)
+    if (!data) return []
 
-    return rows.filter((r) => {
-      const matchesSearch = !t || r.email.toLowerCase().includes(t)
-      const matchesStatus = status === "all" || (r.status || "pending") === status
-      const rev = typeof r.revenue === "number" ? r.revenue : 0
-      const matchesMinRevenue = rev >= min
-      return matchesSearch && matchesStatus && matchesMinRevenue
+    const t = q.trim().toLowerCase()
+
+    return data.users.filter((user) => {
+      const matchesSearch = !t || user.email.toLowerCase().includes(t)
+      const matchesStatus = status === "all" || user.subscription_status === status
+      return matchesSearch && matchesStatus
     })
-  }, [rows, q, status, minRevenue])
+  }, [data, q, status])
+
+  const getStatusBadgeVariant = (status: string) => {
+    switch (status) {
+      case "invited":
+        return "secondary"
+      case "active":
+        return "default"
+      case "converted":
+        return "default"
+      case "inactive":
+        return "destructive"
+      default:
+        return "outline"
+    }
+  }
+
+  if (loading) {
+    return (
+      <main className="p-4 md:p-6 lg:p-8">
+        <div className="mb-6 flex items-center justify-between">
+          <h1 className="text-2xl font-semibold text-pretty">My Referrals</h1>
+        </div>
+        <div className="flex items-center justify-center min-h-[400px]">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
+            <p className="mt-2 text-muted-foreground">Loading referrals...</p>
+          </div>
+        </div>
+      </main>
+    )
+  }
+
+  if (error) {
+    return (
+      <main className="p-4 md:p-6 lg:p-8">
+        <div className="mb-6 flex items-center justify-between">
+          <h1 className="text-2xl font-semibold text-pretty">My Referrals</h1>
+        </div>
+        <Card className="w-full max-w-md mx-auto">
+          <CardHeader>
+            <CardTitle className="text-red-600">Error</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p>{error}</p>
+          </CardContent>
+        </Card>
+      </main>
+    )
+  }
+
+  if (!data) return null
 
   return (
     <main className="p-4 md:p-6 lg:p-8">
@@ -47,10 +144,12 @@ export default function MyReferralsPage() {
           <Link href="/partner/add" className="underline text-sm">
             Add Referrals
           </Link>
-          <Link href="/partner/magic-link" className="underline text-sm">
-            Magic Link
-          </Link>
         </div>
+      </div>
+
+      <div className="mb-4 text-sm text-muted-foreground">
+        <p>Partner: {data.partner_info.full_name || data.partner_info.email}</p>
+        <p>Total Users: {data.pagination.total_users}</p>
       </div>
 
       <Card>
@@ -58,26 +157,18 @@ export default function MyReferralsPage() {
           <CardTitle>Referrals</CardTitle>
           <div className="flex flex-wrap items-center gap-2">
             <Input placeholder="Search emails..." value={q} onChange={(e) => setQ(e.target.value)} className="w-56" />
-            <Select value={status} onValueChange={(v: "all" | "pending" | "joined" | "converted") => setStatus(v)}>
+            <Select value={status} onValueChange={(v: "all" | "invited" | "active" | "inactive" | "converted") => setStatus(v)}>
               <SelectTrigger className="w-40">
                 <SelectValue placeholder="Status" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All statuses</SelectItem>
-                <SelectItem value="pending">Pending</SelectItem>
-                <SelectItem value="joined">Joined</SelectItem>
+                <SelectItem value="invited">Invited</SelectItem>
+                <SelectItem value="active">Active</SelectItem>
+                <SelectItem value="inactive">Inactive</SelectItem>
                 <SelectItem value="converted">Converted</SelectItem>
               </SelectContent>
             </Select>
-            <Input
-              type="number"
-              min={0}
-              step="1"
-              placeholder="Min revenue"
-              value={minRevenue}
-              onChange={(e) => setMinRevenue(e.target.value)}
-              className="w-36"
-            />
           </div>
         </CardHeader>
         <CardContent>
@@ -86,29 +177,36 @@ export default function MyReferralsPage() {
               <thead>
                 <tr className="text-left border-b">
                   <th className="py-2 pr-4">Email</th>
-                  <th className="py-2 pr-4">Added</th>
+                  <th className="py-2 pr-4">Region</th>
                   <th className="py-2 pr-4">Status</th>
-                  <th className="py-2 pr-4">Revenue</th>
+                  <th className="py-2 pr-4">Subscription Ends</th>
+                  <th className="py-2 pr-4">Created At</th>
+                  <th className="py-2 pr-4">Converted At</th>
                 </tr>
               </thead>
               <tbody>
                 {filtered.length ? (
-                  filtered.map((r) => (
-                    <tr key={r.email} className="border-b last:border-0">
-                      <td className="py-2 pr-4 break-words min-w-0">{r.email}</td>
-                      <td className="py-2 pr-4">{r.addedAt || "—"}</td>
-                      <td className="py-2 pr-4 capitalize">{r.status || "pending"}</td>
+                  filtered.map((user) => (
+                    <tr key={user.email} className="border-b last:border-0">
+                      <td className="py-2 pr-4 break-words min-w-0">{user.email}</td>
+                      <td className="py-2 pr-4">{user.region || "—"}</td>
                       <td className="py-2 pr-4">
-                        {`$${(typeof r.revenue === "number" ? r.revenue : 0).toLocaleString(undefined, {
-                          minimumFractionDigits: 0,
-                          maximumFractionDigits: 0,
-                        })}`}
+                        <Badge variant={getStatusBadgeVariant(user.subscription_status)}>
+                          {user.subscription_status}
+                        </Badge>
+                      </td>
+                      <td className="py-2 pr-4">
+                        {user.subscription_ends_at ? new Date(user.subscription_ends_at).toLocaleDateString() : "—"}
+                      </td>
+                      <td className="py-2 pr-4">{new Date(user.created_at).toLocaleDateString()}</td>
+                      <td className="py-2 pr-4">
+                        {user.converted_at ? new Date(user.converted_at).toLocaleDateString() : "—"}
                       </td>
                     </tr>
                   ))
                 ) : (
                   <tr>
-                    <td className="py-6 pr-4 text-muted-foreground" colSpan={4}>
+                    <td className="py-6 pr-4 text-muted-foreground" colSpan={6}>
                       No referrals match your filters. Add some on the{" "}
                       <Link className="underline" href="/partner/add">
                         Add Referrals
@@ -120,6 +218,12 @@ export default function MyReferralsPage() {
               </tbody>
             </table>
           </div>
+
+          {data.pagination.total_pages > 1 && (
+            <div className="mt-4 text-sm text-muted-foreground text-center">
+              Page {data.pagination.current_page} of {data.pagination.total_pages} • {data.pagination.total_users} total users
+            </div>
+          )}
         </CardContent>
       </Card>
     </main>

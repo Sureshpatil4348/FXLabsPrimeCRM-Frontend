@@ -21,8 +21,8 @@ export function middleware(request: NextRequest) {
     const adminToken = request.cookies.get('admin-token')?.value
 
     if (!adminToken) {
-      // Redirect to admin login
-      return NextResponse.redirect(new URL('/login/admin', request.url))
+      // Redirect to root page for login
+      return NextResponse.redirect(new URL('/', request.url))
     }
   }
 
@@ -31,8 +31,8 @@ export function middleware(request: NextRequest) {
     const partToken = request.cookies.get('part-token')?.value
 
     if (!partToken) {
-      // Redirect to partner login
-      return NextResponse.redirect(new URL('/login/partner', request.url))
+      // Redirect to root page for login
+      return NextResponse.redirect(new URL('/', request.url))
     }
   }
 

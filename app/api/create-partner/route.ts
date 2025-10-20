@@ -28,13 +28,11 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Server not configured: missing SUPABASE_PROJECT_ANON_KEY" }, { status: 500 })
     }
 
-    const cookieStore = await cookies()
-    const cookieAdmin = cookieStore.get("admin-token")?.value
-
-    // Allow header override from client-side calls when not using cookies
-    // If you want to allow reading from a header like 'x-admin-token', switch signature to (req: Request)
-    // and read: const headerAdmin = req.headers.get('Admin-Token') || req.headers.get('x-admin-token')
-    const adminToken = cookieAdmin || ""
+  const cookieStore = await cookies()
+  const cookieAdmin = cookieStore.get("admin-token")?.value
+  // Support header override if present
+  const headerAdmin = req.headers.get("Admin-Token") || req.headers.get("x-admin-token") || ""
+  const adminToken = headerAdmin || cookieAdmin || ""
 
     if (!adminToken) {
       return NextResponse.json({ error: "Unauthorized: missing admin token" }, { status: 401 })
@@ -59,8 +57,9 @@ export async function POST(req: Request) {
       }
     }
 
-    const data = (await upstream.json()) as { full_name: string; email: string }
-    return NextResponse.json({ full_name: data.full_name, email: data.email })
+    const data = await upstream.json()
+    // Expecting upstream to return: { message: "Partner <name> with Email - <email> has been created successfully" }
+    return NextResponse.json(data)
   } catch (e) {
     return NextResponse.json({ error: "Unexpected server error" }, { status: 500 })
   }
