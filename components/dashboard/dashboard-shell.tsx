@@ -29,7 +29,7 @@ export function DashboardShell({
   return (
     <div style={overrides}>
       <Navbar onToggleSidebar={() => setOpen((v) => !v)} />
-      <div className="mx-auto max-w-screen-2xl grid md:grid-cols-[18rem_1fr]">
+      <div className="mx-auto max-w-screen-2xl grid md:grid-cols-[18rem_1fr] pt-14 md:pt-0">
         <Sidebar role={role} open={open} onClose={() => setOpen(false)} />
         <main className="min-h-[calc(100dvh-3.5rem)] p-4 md:p-6">{children}</main>
       </div>

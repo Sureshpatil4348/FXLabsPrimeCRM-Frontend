@@ -29,7 +29,7 @@ export function Navbar({ onToggleSidebar }: { onToggleSidebar?: () => void }) {
   }
 
   return (
-    <header className="sticky top-0 z-20 border-b border-border bg-card/80 backdrop-blur supports-[backdrop-filter]:bg-card/60">
+    <header className="sticky top-0 z-50 border-b border-border bg-card/80 backdrop-blur supports-[backdrop-filter]:bg-card/60">
       <div className="mx-auto max-w-screen-2xl px-4 h-14 flex items-center justify-between">
         <div className="flex items-center gap-2">
           <Button
@@ -45,7 +45,7 @@ export function Navbar({ onToggleSidebar }: { onToggleSidebar?: () => void }) {
             </svg>
           </Button>
           <Link href="/" className="font-semibold">
-            TradeReferral
+            FXLabsPrimeCRM
           </Link>
         </div>
         <div className="flex items-center gap-3">

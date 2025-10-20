@@ -115,7 +115,7 @@ export default function AdminUsersPage() {
                 <th className="px-4 py-2 font-medium">Region</th>
                 <th className="px-4 py-2 font-medium">Subscription Status</th>
                 <th className="px-4 py-2 font-medium">Subscription Ends At</th>
-                <th className="px-4 py-2 font-medium">Has Stripe Account</th>
+                <th className="px-4 py-2 font-medium">Has Paid</th>
                 <th className="px-4 py-2 font-medium">Total Spent</th>
                 <th className="px-4 py-2 font-medium">Converted At</th>
                 <th className="px-4 py-2 font-medium">Created At</th>

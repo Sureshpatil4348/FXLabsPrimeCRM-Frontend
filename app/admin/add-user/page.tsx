@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useMemo, useState } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -12,7 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 
 type UserFormData = {
   emails: string
-  default_region: string
+  region: string
   trial_days: number
 }
 
@@ -24,86 +24,84 @@ type CreateUserResponse = {
     failed: number
   }
   created_users: Array<{ email: string }>
-  existing_users: Array<{ email: string; reason: string }>
+  existing_users: Array<{ email: string; reason?: string }>
   failed_users: Array<any>
   trial_days: number
+  region?: string
 }
 
 export default function AddUserPage() {
   const router = useRouter()
   const [formData, setFormData] = useState<UserFormData>({
     emails: "",
-    default_region: "",
+    region: "India",
     trial_days: 30,
   })
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState<CreateUserResponse | null>(null)
+  const [csvFile, setCsvFile] = useState<File | null>(null)
+  const [csvEmails, setCsvEmails] = useState<string[]>([])
+
+  const previewEmails = useMemo(() => {
+    const fromText = formData.emails
+      .split(/[\n,]/)
+      .map((s) => s.trim())
+      .filter((s) => s.length > 0)
+    const merged = new Set<string>([...fromText, ...csvEmails])
+    return Array.from(merged)
+  }, [formData.emails, csvEmails])
 
   const handleFormSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    const lines = formData.emails
-      .split("\n")
-      .map(line => line.trim())
-      .filter(line => line.length > 0)
-
-    if (lines.length === 0) {
-      setError("Please provide at least one email address")
-      return
-    }
-
-    // Parse emails and regions
-    const users: Array<{ email: string; region?: string }> = []
-    const invalidLines: string[] = []
-
-    lines.forEach(line => {
-      // Support formats: "email@domain.com" or "email@domain.com region"
-      const parts = line.split(/\s+/)
-      const email = parts[0].trim()
-      const region = parts.slice(1).join(" ").trim() || formData.default_region || undefined
-
-      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-        invalidLines.push(line)
-      } else {
-        users.push({ email, ...(region && { region }) })
-      }
-    })
-
-    if (invalidLines.length > 0) {
-      setError(`Invalid email format: ${invalidLines.join(", ")}`)
-      return
-    }
-
     setLoading(true)
     setError(null)
     setSuccess(null)
 
-    try {
-      const requestBody = {
-        users,
-        trial_days: formData.trial_days
-      }
+    const fromText = formData.emails
+      .split(/[\,\n]/)
+      .map((email) => email.trim())
+      .filter((email) => email.length > 0)
+    const emailStrings = Array.from(new Set<string>([...fromText, ...csvEmails]))
 
-      const response = await fetch("/api/create-user-by-admin", {
+    if (emailStrings.length === 0) {
+      setError("Please provide at least one email address")
+      setLoading(false)
+      return
+    }
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+    const invalidEmails = emailStrings.filter((email) => !emailRegex.test(email))
+    if (invalidEmails.length > 0) {
+      setError(`Invalid email format(s): ${invalidEmails.join(", ")}`)
+      setLoading(false)
+      return
+    }
+
+    if (!formData.region) {
+      setError("Region is required")
+      setLoading(false)
+      return
+    }
+
+    const users = emailStrings.map((email) => ({ email }))
+
+    try {
+      const requestBody = { users, region: formData.region, trial_days: formData.trial_days }
+      const response = await fetch("/api/create-user", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(requestBody),
       })
-
       if (!response.ok) {
         const errorData = (await response.json()) as { message?: string }
         throw new Error(errorData.message || "Failed to create users")
       }
-
       const data: CreateUserResponse = await response.json()
       setSuccess(data)
-      setFormData({
-        emails: "",
-        default_region: "",
-        trial_days: 30,
-      })
+      setFormData({ emails: "", region: "India", trial_days: 30 })
+      setCsvFile(null)
+      setCsvEmails([])
     } catch (err) {
       setError(err instanceof Error ? err.message : "An error occurred")
     } finally {
@@ -112,132 +110,196 @@ export default function AddUserPage() {
   }
 
   return (
-    <div className="container mx-auto py-8">
-      <div className="max-w-2xl mx-auto">
-        <Card>
-          <CardHeader>
-            <CardTitle>Add Users</CardTitle>
-            <CardDescription>
-              Create multiple user accounts at once with trial access. Enter one email per line with optional region (e.g., "user@example.com India").
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <form onSubmit={handleFormSubmit} className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="emails">Email Addresses</Label>
-                <Textarea
-                  id="emails"
-                  value={formData.emails}
-                  onChange={(e) => setFormData({ ...formData, emails: e.target.value })}
-                  placeholder="user1@example.com India&#10;user2@example.com USA&#10;user3@example.com"
-                  rows={5}
-                  required
-                />
-                <p className="text-sm text-muted-foreground">
-                  Enter one email per line. Optionally add region after email (e.g., "user@example.com India")
-                </p>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="default_region">Default Region (Optional)</Label>
-                <Input
-                  id="default_region"
-                  type="text"
-                  value={formData.default_region}
-                  onChange={(e) => setFormData({ ...formData, default_region: e.target.value })}
-                  placeholder="e.g., India, USA (applied to emails without specific region)"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="trial_days">Trial Days</Label>
-                <Input
-                  id="trial_days"
-                  type="number"
-                  min="1"
-                  max="365"
-                  value={formData.trial_days}
-                  onChange={(e) => setFormData({ ...formData, trial_days: parseInt(e.target.value) || 30 })}
-                  placeholder="30"
-                />
-              </div>
-
-              {error && (
-                <Alert variant="destructive">
-                  <AlertDescription>{error}</AlertDescription>
-                </Alert>
-              )}
-
-              {success && (
-                <Alert>
-                  <AlertDescription>
-                    <div className="space-y-2">
-                      <p className="font-medium">{success.message}</p>
-                      <p>Summary: {success.summary.created} created, {success.summary.existing} existing, {success.summary.failed} failed</p>
-
-                      {success.created_users.length > 0 && (
-                        <div>
-                          <p className="font-medium text-green-700">✅ Successfully Created:</p>
-                          <ul className="list-disc list-inside text-sm ml-4">
-                            {success.created_users.map((user, index) => (
-                              <li key={index} className="text-green-600">
-                                {user.email}
-                              </li>
-                            ))}
-                          </ul>
-                        </div>
-                      )}
-
-                      {success.existing_users.length > 0 && (
-                        <div>
-                          <p className="font-medium text-yellow-700">⚠️ Already Exist:</p>
-                          <ul className="list-disc list-inside text-sm ml-4">
-                            {success.existing_users.map((user, index) => (
-                              <li key={index} className="text-yellow-600">
-                                {user.email} - {user.reason}
-                              </li>
-                            ))}
-                          </ul>
-                        </div>
-                      )}
-
-                      {success.failed_users.length > 0 && (
-                        <div>
-                          <p className="font-medium text-red-700">❌ Failed to Create:</p>
-                          <ul className="list-disc list-inside text-sm ml-4">
-                            {success.failed_users.map((user, index) => (
-                              <li key={index} className="text-red-600">
-                                {user.email || `User ${index + 1}`}
-                              </li>
-                            ))}
-                          </ul>
-                        </div>
-                      )}
-
-                      <p className="text-xs text-muted-foreground mt-2">
-                        Trial period: {success.trial_days} days
-                      </p>
-                    </div>
-                  </AlertDescription>
-                </Alert>
-              )}
-
-              <div className="flex gap-4">
-                <Button type="submit" disabled={loading}>
-                  {loading ? "Creating..." : "Create Users"}
-                </Button>
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => router.push("/admin")}
-                >
-                  Cancel
-                </Button>
-              </div>
-            </form>
-          </CardContent>
-        </Card>
+    <div className="space-y-6">
+      <div>
+        <h1 className="text-2xl font-bold">Add Users</h1>
+        <p className="text-muted-foreground">Create multiple users with trial access</p>
       </div>
+
+      {error && (
+        <Alert variant="destructive">
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
+      )}
+
+      {success && (
+        <Alert>
+          <AlertDescription>
+            <div className="space-y-2">
+              <p className="font-medium">{success.message}</p>
+              <p>
+                Summary: {success.summary.created} created, {success.summary.existing} existing, {success.summary.failed} failed
+              </p>
+              {success.region && <p className="text-sm">Region: {success.region}</p>}
+
+              {success.created_users.length > 0 && (
+                <div>
+                  <p className="font-medium text-green-700">✅ Successfully Created:</p>
+                  <ul className="list-disc list-inside text-sm ml-4">
+                    {success.created_users.map((user, index) => (
+                      <li key={index} className="text-green-600">
+                        {user.email}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              {success.existing_users.length > 0 && (
+                <div>
+                  <p className="font-medium text-yellow-700">⚠️ Already Exist:</p>
+                  <ul className="list-disc list-inside text-sm ml-4">
+                    {success.existing_users.map((user, index) => (
+                      <li key={index} className="text-yellow-600">
+                        {user.email} - {user.reason}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              {success.failed_users.length > 0 && (
+                <div>
+                  <p className="font-medium text-red-700">❌ Failed to Create:</p>
+                  <ul className="list-disc list-inside text-sm ml-4">
+                    {success.failed_users.map((user, index) => (
+                      <li key={index} className="text-red-600">
+                        {user.email || `User ${index + 1}`}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              <p className="text-xs text-muted-foreground mt-2">Trial period: {success.trial_days} days</p>
+            </div>
+          </AlertDescription>
+        </Alert>
+      )}
+
+      <Card className="max-w-2xl">
+        <CardHeader>
+          <CardTitle>User Details</CardTitle>
+          <CardDescription>Enter the information for the new users</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <form onSubmit={handleFormSubmit} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="emails">Email Addresses</Label>
+              <Textarea
+                id="emails"
+                value={formData.emails}
+                onChange={(e) => setFormData({ ...formData, emails: e.target.value })}
+                placeholder="user1@example.com, user2@example.com..."
+                rows={5}
+                required
+              />
+              <p className="text-sm text-muted-foreground">Enter emails separated by commas or new lines.</p>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="region">Region</Label>
+              <Select value={formData.region} onValueChange={(value) => setFormData({ ...formData, region: value })}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select a region" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="India">India</SelectItem>
+                  <SelectItem value="International">International</SelectItem>
+                </SelectContent>
+              </Select>
+              <p className="text-sm text-muted-foreground">Region is required. Defaulted to India.</p>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="trial_days">Trial Days</Label>
+              <Input
+                id="trial_days"
+                type="number"
+                min={1}
+                max={365}
+                value={formData.trial_days}
+                onChange={(e) => setFormData({ ...formData, trial_days: parseInt(e.target.value, 10) || 30 })}
+                placeholder="30"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="csv">Upload CSV (optional)</Label>
+              <Input
+                id="csv"
+                type="file"
+                accept=".csv,text/csv"
+                onChange={async (e) => {
+                  const file = e.target.files?.[0]
+                  setCsvFile(file || null)
+                  if (!file) return
+                  try {
+                    const text = await file.text()
+                    const lines = text.split(/\r?\n/)
+                    const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+                    const found = new Set<string>()
+                    for (const raw of lines) {
+                      const line = raw.trim()
+                      if (!line) continue
+                      const cells = line.split(/,|;|\t/).map((c) => c.trim()).filter(Boolean)
+                      for (const cell of cells) {
+                        if (emailPattern.test(cell)) {
+                          found.add(cell)
+                        }
+                      }
+                    }
+                    setCsvEmails(Array.from(found))
+                  } catch (err) {
+                    setError("Failed to parse CSV file. Please ensure it has an Email column.")
+                  }
+                }}
+              />
+              {csvFile && (
+                <div className="flex items-center justify-between text-sm">
+                  <p className="text-muted-foreground">Selected: {csvFile.name} ({csvEmails.length} emails)</p>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      setCsvFile(null)
+                      setCsvEmails([])
+                      const input = document.getElementById("csv") as HTMLInputElement | null
+                      if (input) input.value = ""
+                    }}
+                  >
+                    Clear CSV
+                  </Button>
+                </div>
+              )}
+              <p className="text-sm text-muted-foreground">We'll only extract valid emails from the CSV and de-duplicate them.</p>
+            </div>
+
+            {previewEmails.length > 0 && (
+              <div className="space-y-2">
+                <Label>Preview ({previewEmails.length})</Label>
+                <div className="max-h-40 overflow-auto border rounded p-2 text-sm bg-muted/30">
+                  <ul className="list-disc ml-4">
+                    {previewEmails.map((em) => (
+                      <li key={em}>{em}</li>
+                    ))}
+                  </ul>
+                </div>
+              </div>
+            )}
+
+            <div className="flex gap-4">
+              <Button type="submit" disabled={loading}>
+                {loading ? "Creating..." : "Create Users"}
+              </Button>
+              <Button type="button" variant="outline" onClick={() => router.push("/admin")}>
+                Cancel
+              </Button>
+            </div>
+          </form>
+        </CardContent>
+      </Card>
     </div>
   )
 }

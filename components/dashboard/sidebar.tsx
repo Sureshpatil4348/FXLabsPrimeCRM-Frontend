@@ -14,6 +14,7 @@ export function Sidebar({ role, open, onClose }: SidebarProps) {
     { href: "/admin", label: "Dashboard" },
     { href: "/admin/partners", label: "Partners" },
     { href: "/admin/create-partner", label: "Create Partner" },
+    { href: "/admin/create-admin", label: "Create Admin" },
     { href: "/admin/add-user", label: "Add User" },
     { href: "/admin/users", label: "All Users" }
   ]
@@ -21,8 +22,7 @@ export function Sidebar({ role, open, onClose }: SidebarProps) {
     { href: "/partner", label: "Dashboard" },
     { href: "/partner/referrals", label: "My Referrals" },
     { href: "/partner/add", label: "Add Referrals" },
-    { href: "/partner/performance-report", label: "Performance Report" },
-    { href: "/partner/settings", label: "Settings" },
+   
   ]
   const items = role === "admin" ? adminItems : partnerItems
 
@@ -31,7 +31,7 @@ export function Sidebar({ role, open, onClose }: SidebarProps) {
       {/* Overlay for mobile */}
       <div
         className={cn(
-          "fixed inset-0 z-20 bg-black/30 md:hidden transition-opacity",
+          "fixed inset-0 z-40 bg-black/30 md:hidden transition-opacity",
           open ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none",
         )}
         onClick={onClose}

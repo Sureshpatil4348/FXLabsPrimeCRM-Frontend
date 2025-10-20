@@ -9,16 +9,17 @@ type AdminStats = {
   revenue: {
     total: number
     last_month: number
+    total_payments: number
+    average_payment_amount: number
     currency: string
   }
   users: {
-    total_invited: number
-    total_converted: number
-    on_trial: number
-    active_subscriptions: number
-    invited_not_converted: number
-    churned: number
-    recent_signups_30_days: number
+    total_users: number
+    total_added: number
+    total_active: number
+    total_expired: number
+    total_users_by_region: Record<string, number>
+    recent_users_30_days: number
   }
   partners: {
     total_partners: number
@@ -58,6 +59,9 @@ export default function AdminDashboardPage() {
           return
         }
         const result: AdminStats = await res.json()
+        console.log('Admin API Response:', result)
+        console.log('Users object:', result.users)
+        console.log('Revenue object:', result.revenue)
         setStats(result)
       } catch (err) {
         setError("Unable to fetch stats. Please try again.")
@@ -113,14 +117,14 @@ export default function AdminDashboardPage() {
 
       {/* KPIs */}
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-        <StatsCard label="Total Users" value={stats.users.total_invited} />
+        <StatsCard label="Total Users" value={stats.users.total_users} />
         <StatsCard label="Total Revenue" value={`$${stats.revenue.total}`} />
         <StatsCard label="MRR" value={`$${stats.revenue.last_month}`} />
-        <StatsCard label="Converted" value={stats.users.total_converted} />
-        <StatsCard label="Active Trials" value={stats.users.on_trial} />
-        <StatsCard label="Active Subscriptions" value={stats.users.active_subscriptions} />
-        <StatsCard label="Churned" value={stats.users.churned} />
-        <StatsCard label="Recent Signups (30d)" value={stats.users.recent_signups_30_days} />
+        <StatsCard label="Total Payments" value={stats.revenue.total_payments} />
+        <StatsCard label="Avg Payment" value={`$${stats.revenue.average_payment_amount}`} />
+        <StatsCard label="Active Users" value={stats.users.total_active} />
+        <StatsCard label="Expired Users" value={stats.users.total_expired} />
+        <StatsCard label="Recent Users (30d)" value={stats.users.recent_users_30_days} />
         <StatsCard label="Total Partners" value={stats.partners.total_partners} />
         <StatsCard label="Active Partners" value={stats.partners.active_partners} />
         <StatsCard label="Total Commission" value={`$${stats.partners.total_commission_paid}`} />
@@ -133,19 +137,19 @@ export default function AdminDashboardPage() {
         <p>Currency: {stats.revenue.currency.toUpperCase()}</p>
       </div>
 
-
-
-      {/* Quick links */}
-      <div className="flex flex-wrap gap-2">
-        <Button asChild variant="outline">
-          <Link href="/admin/partners">Manage Partners</Link>
-        </Button>
-        <Button asChild variant="outline">
-          <Link href="/admin/users">All Users</Link>
-        </Button>
-        <Button asChild variant="outline">
-          <Link href="/admin/referrals">All Referrals</Link>
-        </Button>
+      {/* Users by Region */}
+      <div className="border border-border rounded-lg p-4">
+        <h2 className="font-medium mb-2">Users by Region</h2>
+        <p className="text-sm text-muted-foreground mb-3">
+          Distribution of users across different regions.
+        </p>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+          {Object.entries(stats.users.total_users_by_region).map(([region, count]) => (
+            <div key={region}>
+              <span className="font-medium">{region === 'null' ? 'Not Set' : region}:</span> {count} users
+            </div>
+          ))}
+        </div>
       </div>
     </section>
   )

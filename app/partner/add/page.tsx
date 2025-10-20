@@ -1,256 +1,327 @@
 "use client"
 
 import { useMemo, useState } from "react"
-import Link from "next/link"
+import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { useToast } from "@/hooks/use-toast"
+import { Textarea } from "@/components/ui/textarea"
+import { Alert, AlertDescription } from "@/components/ui/alert"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 
-type Mode = "single" | "bulk" | "csv"
-
-function isValidEmail(email: string) {
-  const e = email.trim()
-  if (!e) return false
-  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e)
+type UserFormData = {
+  emails: string
+  region: string
+  trial_days: number
 }
 
-function normalizeEmails(list: string[]): string[] {
-  const uniq = new Set<string>()
-  for (const raw of list) {
-    const e = raw.trim().toLowerCase()
-    if (isValidEmail(e)) uniq.add(e)
+type CreateUserResponse = {
+  message: string
+  summary: {
+    created: number
+    existing: number
+    failed: number
   }
-  return Array.from(uniq)
-}
-
-function parseCsvEmails(text: string): string[] {
-  const lines = text.split(/\r?\n/).filter((l) => l.trim().length > 0)
-  if (lines.length === 0) return []
-  const headerParts = lines[0].split(",").map((s) => s.trim().toLowerCase())
-  const hasHeader = headerParts.some((h) => h === "email" || h === "emails")
-  const emails: string[] = []
-
-  if (hasHeader) {
-    const idx = headerParts.findIndex((h) => h === "email" || h === "emails")
-    for (let i = 1; i < lines.length; i++) {
-      const parts = lines[i].split(",")
-      const cell = (parts[idx] || "").trim()
-      if (cell) emails.push(cell)
-    }
-  } else {
-    for (const line of lines) {
-      const parts = line.split(",").map((s) => s.trim())
-      for (const p of parts) if (p) emails.push(p)
-    }
-  }
-  return emails
+  created_users: Array<{ email: string }>
+  existing_users: Array<{ email: string; reason?: string }>
+  failed_users: Array<any>
+  trial_days: number
+  region?: string
 }
 
 export default function AddReferralsPage() {
-  const { toast } = useToast()
-  const [mode, setMode] = useState<Mode>("single")
+  const router = useRouter()
+  const [formData, setFormData] = useState<UserFormData>({
+    emails: "",
+    region: "India",
+    trial_days: 30,
+  })
   const [loading, setLoading] = useState(false)
-
-  // Single mode
-  const [single, setSingle] = useState("")
-
-  // Bulk mode
-  const [bulk, setBulk] = useState("")
-
-  // CSV mode
+  const [error, setError] = useState<string | null>(null)
+  const [success, setSuccess] = useState<CreateUserResponse | null>(null)
   const [csvFile, setCsvFile] = useState<File | null>(null)
-  const [csvPreview, setCsvPreview] = useState<string[]>([])
+  const [csvEmails, setCsvEmails] = useState<string[]>([])
 
-  const parsedBulk = useMemo(() => {
-    if (!bulk.trim()) return []
-    return bulk
-      .split(/[\n,]/g)
+  // Derive preview emails from textarea + CSV file
+  const previewEmails = useMemo(() => {
+    const fromText = formData.emails
+      .split(/[\n,]/)
       .map((s) => s.trim())
-      .filter(Boolean)
-  }, [bulk])
+      .filter((s) => s.length > 0)
 
-  const singleList = useMemo(() => (single.trim() ? [single.trim()] : []), [single])
+    const merged = new Set<string>([...fromText, ...csvEmails])
+    return Array.from(merged)
+  }, [formData.emails, csvEmails])
 
-  const combinedPreview = useMemo(() => {
-    const all = [...singleList, ...parsedBulk, ...csvPreview]
-    return normalizeEmails(all)
-  }, [singleList, parsedBulk, csvPreview])
+  const handleFormSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setLoading(true)
+    setError(null)
+    setSuccess(null)
 
-  async function handleCsvChange(file: File) {
-    setCsvFile(file)
-    try {
-      const text = await file.text()
-      const emails = parseCsvEmails(text)
-      setCsvPreview(emails)
-    } catch {
-      toast({ title: "Failed to read CSV", variant: "destructive" })
-    }
-  }
+    // Parse emails from textarea - support comma-separated and newline-separated
+    const fromText = formData.emails
+      .split(/[,\n]/)
+      .map((email) => email.trim())
+      .filter((email) => email.length > 0)
+    const emailStrings = Array.from(new Set<string>([...fromText, ...csvEmails]))
 
-  async function handleSave() {
-    if (combinedPreview.length === 0) {
-      toast({ title: "No valid emails to add", variant: "destructive" })
+    if (emailStrings.length === 0) {
+      setError("Please provide at least one email address")
+      setLoading(false)
       return
     }
-    setLoading(true)
+
+    // Validate email formats
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+  const invalidEmails = emailStrings.filter((email) => !emailRegex.test(email))
+
+    if (invalidEmails.length > 0) {
+      setError(`Invalid email format(s): ${invalidEmails.join(", ")}`)
+      setLoading(false)
+      return
+    }
+
+    // Create users array with region
+    if (!formData.region) {
+      setError("Region is required")
+      setLoading(false)
+      return
+    }
+
+    const users = emailStrings.map((email) => ({
+      email,
+    }))
+
     try {
+      const requestBody = {
+        users,
+        region: formData.region,
+        trial_days: formData.trial_days,
+      }
+
       const response = await fetch("/api/create-user", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ emails: combinedPreview }),
+        body: JSON.stringify(requestBody),
       })
 
       if (!response.ok) {
-        const errorData = await response.json()
+        const errorData = (await response.json()) as { message?: string }
         throw new Error(errorData.message || "Failed to create users")
       }
 
-      const data = await response.json()
-      toast({ 
-        title: "Users created", 
-        description: `Created: ${data.summary.created}, Already exists: ${data.summary.already_exists}, Failed: ${data.summary.failed}` 
-      })
-      if (mode === "single") setSingle("")
-      if (mode === "bulk") setBulk("")
-      if (mode === "csv") {
-        setCsvFile(null)
-        setCsvPreview([])
-      }
-    } catch (error) {
-      toast({ 
-        title: "Error", 
-        description: error instanceof Error ? error.message : "An error occurred", 
-        variant: "destructive" 
-      })
+      const data: CreateUserResponse = await response.json()
+      setSuccess(data)
+  setFormData({ emails: "", region: "India", trial_days: 30 })
+  setCsvFile(null)
+  setCsvEmails([])
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "An error occurred")
     } finally {
       setLoading(false)
     }
   }
 
   return (
-    <main className="p-6 md:p-8 space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-semibold text-pretty">Add Prospects</h1>
-          <p className="text-muted-foreground">
-            Choose an input method to add referral emails. We’ll validate, dedupe, and save them locally.
-          </p>
-        </div>
-        <div className="flex gap-2">
-          <Link href="/partner/magic-link">
-            <Button variant="outline">Generate Magic Link</Button>
-          </Link>
-          <Link href="/partner">
-            <Button variant="secondary">Back to Dashboard</Button>
-          </Link>
-        </div>
-      </div>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Input Methods</CardTitle>
-          <CardDescription>Single email, bulk paste, or CSV upload (most scalable).</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          <div className="flex flex-wrap gap-2">
-            <Button variant={mode === "single" ? "default" : "outline"} onClick={() => setMode("single")}>
-              Single email input
-            </Button>
-            <Button variant={mode === "bulk" ? "default" : "outline"} onClick={() => setMode("bulk")}>
-              Bulk paste
-            </Button>
-            <Button variant={mode === "csv" ? "default" : "outline"} onClick={() => setMode("csv")}>
-              CSV upload
-            </Button>
-          </div>
-
-          {mode === "single" && (
-            <div className="grid gap-3">
-              <Label htmlFor="single">Email</Label>
-              <Input
-                id="single"
-                type="email"
-                placeholder="lead@example.com"
-                value={single}
-                onChange={(e) => setSingle(e.target.value)}
-              />
-              <p className="text-xs text-muted-foreground">Add one email at a time with validation.</p>
-            </div>
-          )}
-
-          {mode === "bulk" && (
-            <div className="grid gap-3">
-              <Label htmlFor="bulk">Paste emails (comma- or line-separated)</Label>
-              <textarea
-                id="bulk"
-                rows={6}
-                placeholder={"lead1@example.com, lead2@example.com\nlead3@example.com"}
-                className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-                value={bulk}
-                onChange={(e) => setBulk(e.target.value)}
-              />
-              <p className="text-xs text-muted-foreground">We’ll split, validate, and dedupe.</p>
-            </div>
-          )}
-
-          {mode === "csv" && (
-            <div className="grid gap-3">
-              <Label htmlFor="csv">Upload CSV file</Label>
-              <Input
-                id="csv"
-                type="file"
-                accept=".csv,text/csv"
-                onChange={(e) => {
-                  const file = e.target.files?.[0]
-                  if (file) handleCsvChange(file)
-                }}
-              />
-              <p className="text-xs text-muted-foreground">
-                We’ll auto-detect an “email” column. Otherwise, we’ll scan for cells that look like emails.
-              </p>
-              {csvFile ? (
-                <div className="text-xs text-muted-foreground">
-                  Selected: <span className="font-medium">{csvFile.name}</span>
-                </div>
-              ) : null}
-            </div>
-          )}
-
-          <div className="grid gap-2">
-            <div className="text-sm">
-              <span className="font-medium">Preview</span> ({combinedPreview.length} valid email
-              {combinedPreview.length === 1 ? "" : "s"})
-            </div>
-            {combinedPreview.length > 0 ? (
-              <div className="rounded-md border border-border p-3 text-sm max-h-48 overflow-auto">
-                <ul className="grid gap-1">
-                  {combinedPreview.map((e) => (
-                    <li key={e} className="truncate">
-                      {e}
-                    </li>
-                  ))}
-                </ul>
+    <div className="container mx-auto py-8">
+      <div className="max-w-2xl mx-auto">
+        <Card>
+          <CardHeader>
+            <CardTitle>Add Prospects</CardTitle>
+            <CardDescription>
+              Add referral prospects with trial access. Enter emails separated by commas or new lines, or upload a CSV with a single Email column.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={handleFormSubmit} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="emails">Email Addresses</Label>
+                <Textarea
+                  id="emails"
+                  value={formData.emails}
+                  onChange={(e) => setFormData({ ...formData, emails: e.target.value })}
+                  placeholder="user1@example.com, user2@example.com..."
+                  rows={5}
+                  required
+                />
+                <p className="text-sm text-muted-foreground">Enter emails separated by commas or new lines.</p>
               </div>
-            ) : (
-              <p className="text-sm text-muted-foreground">Nothing to preview yet.</p>
-            )}
-          </div>
 
-          <div className="flex justify-end">
-            <Button onClick={handleSave} disabled={combinedPreview.length === 0 || loading}>
-              {loading ? "Creating..." : "Create users"}
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
+              <div className="space-y-2">
+                <Label htmlFor="region">Region</Label>
+                <Select value={formData.region} onValueChange={(value) => setFormData({ ...formData, region: value })}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select a region" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="India">India</SelectItem>
+                    <SelectItem value="International">International</SelectItem>
+                  </SelectContent>
+                </Select>
+                <p className="text-sm text-muted-foreground">Region is required. Defaulted to India.</p>
+              </div>
 
-      <p className="text-xs text-muted-foreground">
-        Add prospect emails to create user accounts. Emails will be validated and deduplicated.
-      </p>
-    </main>
+              <div className="space-y-2">
+                <Label htmlFor="trial_days">Trial Days</Label>
+                <Input
+                  id="trial_days"
+                  type="number"
+                  min="1"
+                  max="365"
+                  value={formData.trial_days}
+                  onChange={(e) => setFormData({ ...formData, trial_days: parseInt(e.target.value) || 30 })}
+                  placeholder="30"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="csv">Upload CSV (optional)</Label>
+                <Input
+                  id="csv"
+                  type="file"
+                  accept=".csv,text/csv"
+                  onChange={async (e) => {
+                    const file = e.target.files?.[0]
+                    setCsvFile(file || null)
+                    if (!file) return
+                    try {
+                      const text = await file.text()
+                      // Extract only values that look like emails from any column
+                      const lines = text.split(/\r?\n/)
+                      const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+                      const found = new Set<string>()
+                      for (const raw of lines) {
+                        const line = raw.trim()
+                        if (!line) continue
+                        const cells = line.split(/,|;|\t/).map((c) => c.trim()).filter(Boolean)
+                        for (const cell of cells) {
+                          if (emailPattern.test(cell)) {
+                            found.add(cell)
+                          }
+                        }
+                      }
+                      setCsvEmails(Array.from(found))
+                    } catch (err) {
+                      setError("Failed to parse CSV file. Please ensure it has an Email column.")
+                    }
+                  }}
+                />
+                {csvFile && (
+                  <div className="flex items-center justify-between text-sm">
+                    <p className="text-muted-foreground">Selected: {csvFile.name} ({csvEmails.length} emails)</p>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        setCsvFile(null)
+                        setCsvEmails([])
+                        // also clear the file input value
+                        const input = document.getElementById("csv") as HTMLInputElement | null
+                        if (input) input.value = ""
+                      }}
+                    >
+                      Clear CSV
+                    </Button>
+                  </div>
+                )}
+                <p className="text-sm text-muted-foreground">We'll only extract valid emails from the CSV and de-duplicate them.</p>
+              </div>
+
+              {previewEmails.length > 0 && (
+                <div className="space-y-2">
+                  <Label>Preview ({previewEmails.length})</Label>
+                  <div className="max-h-40 overflow-auto border rounded p-2 text-sm bg-muted/30">
+                    <ul className="list-disc ml-4">
+                      {previewEmails.map((em) => (
+                        <li key={em}>{em}</li>
+                      ))}
+                    </ul>
+                  </div>
+                </div>
+              )}
+
+              {error && (
+                <Alert variant="destructive">
+                  <AlertDescription>{error}</AlertDescription>
+                </Alert>
+              )}
+
+              {success && (
+                <Alert>
+                  <AlertDescription>
+                    <div className="space-y-2">
+                      <p className="font-medium">{success.message}</p>
+                      <p>Summary: {success.summary.created} created, {success.summary.existing} existing, {success.summary.failed} failed</p>
+                      {success.region && (
+                        <p className="text-sm">Region: {success.region}</p>
+                      )}
+
+                      {success.created_users.length > 0 && (
+                        <div>
+                          <p className="font-medium text-green-700">✅ Successfully Created:</p>
+                          <ul className="list-disc list-inside text-sm ml-4">
+                            {success.created_users.map((user, index) => (
+                              <li key={index} className="text-green-600">
+                                {user.email}
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+
+                      {success.existing_users.length > 0 && (
+                        <div>
+                          <p className="font-medium text-yellow-700">⚠️ Already Exist:</p>
+                          <ul className="list-disc list-inside text-sm ml-4">
+                            {success.existing_users.map((user, index) => (
+                              <li key={index} className="text-yellow-600">
+                                {user.email} - {user.reason}
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+
+                      {success.failed_users.length > 0 && (
+                        <div>
+                          <p className="font-medium text-red-700">❌ Failed to Create:</p>
+                          <ul className="list-disc list-inside text-sm ml-4">
+                            {success.failed_users.map((user, index) => (
+                              <li key={index} className="text-red-600">
+                                {user.email || `User ${index + 1}`}
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+
+                      <p className="text-xs text-muted-foreground mt-2">Trial period: {success.trial_days} days</p>
+                    </div>
+                  </AlertDescription>
+                </Alert>
+              )}
+
+              <div className="flex gap-4">
+                <Button type="submit" disabled={loading}>
+                  {loading ? "Creating..." : "Create Users"}
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => router.push("/partner")}
+                >
+                  Cancel
+                </Button>
+              </div>
+            </form>
+          </CardContent>
+        </Card>
+      </div>
+    </div>
   )
 }

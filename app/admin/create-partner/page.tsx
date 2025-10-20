@@ -29,8 +29,18 @@ export default function CreatePartnerPage() {
 
   const handleFormSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    // Basic client-side checks
     if (!formData.email || !formData.full_name || !formData.password) {
       setError("Please fill in all required fields")
+      return
+    }
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+    if (!emailRegex.test(formData.email)) {
+      setError("Please enter a valid email address")
+      return
+    }
+    if (formData.commission_percent < 0 || formData.commission_percent > 100) {
+      setError("Commission percent must be between 0 and 100")
       return
     }
 
@@ -52,8 +62,8 @@ export default function CreatePartnerPage() {
         return
       }
 
-      const data = await res.json()
-      setSuccess(`Partner ${formData.full_name} created with ${formData.email}`)
+  const data = await res.json()
+  setSuccess(data.message || `Partner ${formData.full_name} created with ${formData.email}`)
 
       // Reset form
       setFormData({

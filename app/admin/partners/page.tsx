@@ -11,7 +11,7 @@ type Partner = {
   full_name: string | null
   commission_percent: number
   total_revenue: number
-  total_invited: number
+  total_added: number
   total_converted: number
   created_at: string
 }
@@ -28,7 +28,6 @@ type PartnersResponse = {
   }
   filters: {
     sort_by: string
-    include_deleted: boolean
   }
 }
 
@@ -106,7 +105,7 @@ export default function AdminPartnersPage() {
   // Calculate statistics from the partners data
   const totalPartners = data.partners.length
   const totalRevenue = data.partners.reduce((sum, p) => sum + p.total_revenue, 0)
-  const totalInvited = data.partners.reduce((sum, p) => sum + p.total_invited, 0)
+  const totalAdded = data.partners.reduce((sum, p) => sum + p.total_added, 0)
   const totalConverted = data.partners.reduce((sum, p) => sum + p.total_converted, 0)
 
   return (
@@ -130,10 +129,10 @@ export default function AdminPartnersPage() {
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Invited</CardTitle>
+            <CardTitle className="text-sm font-medium">Total Users Added</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{totalInvited}</div>
+            <div className="text-2xl font-bold">{totalAdded}</div>
           </CardContent>
         </Card>
         <Card>
@@ -159,7 +158,7 @@ export default function AdminPartnersPage() {
                 <TableHead>Email</TableHead>
                 <TableHead>Commission</TableHead>
                 <TableHead>Total Revenue</TableHead>
-                <TableHead>Total Invited</TableHead>
+                <TableHead>Total Added</TableHead>
                 <TableHead>Total Converted</TableHead>
                 <TableHead>Created</TableHead>
               </TableRow>
@@ -171,7 +170,7 @@ export default function AdminPartnersPage() {
                   <TableCell>{partner.email}</TableCell>
                   <TableCell>{partner.commission_percent}%</TableCell>
                   <TableCell>{currency(partner.total_revenue)}</TableCell>
-                  <TableCell>{partner.total_invited}</TableCell>
+                  <TableCell>{partner.total_added}</TableCell>
                   <TableCell>{partner.total_converted}</TableCell>
                   <TableCell>{new Date(partner.created_at).toLocaleDateString()}</TableCell>
                 </TableRow>
