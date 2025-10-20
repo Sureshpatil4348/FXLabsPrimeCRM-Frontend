@@ -7,6 +7,20 @@ import { cookies } from "next/headers"
 // - Admin-Token: value from cookie/header (no Bearer)
 export async function POST(req: Request) {
   try {
+    // CSRF: allow only same-origin (or env-configured) requests
+    const selfOrigin = new URL(req.url).origin
+    const allowed = (process.env.ALLOWED_ORIGINS || selfOrigin)
+      .split(',')
+      .map(s => s.trim())
+      .filter(Boolean)
+    const origin = req.headers.get("origin") || ""
+    const referer = req.headers.get("referer") || ""
+    const passOrigin = !origin || allowed.includes(origin)
+    const passReferer = !referer || allowed.some(a => referer.startsWith(a))
+    if (!passOrigin || !passReferer) {
+      return NextResponse.json({ error: "Invalid origin" }, { status: 403 })
+    }
+
     const { full_name, email, password, commission_percent } = (await req.json()) as {
       full_name?: string
       email?: string

@@ -39,8 +39,9 @@ export async function POST(req: Request) {
     if (!upstream.ok) {
       let message = "Login failed"
       try {
-        const err = (await upstream.json()) as { message?: string }
+        const err = (await upstream.json()) as { message?: string; error?: string }
         if (err?.message) message = err.message
+        else if (err?.error) message = err.error
       } catch {}
       return NextResponse.json({ message }, { status: upstream.status })
     }
@@ -57,12 +58,8 @@ export async function POST(req: Request) {
     return NextResponse.json({ message: "Malformed upstream response" }, { status: 502 })
   }
 
-    // Set cookie and return in requested shape without Bearer prefix
-    const res = NextResponse.json(
-      role === "admin"
-        ? { "Admin-Token": token }
-        : { "Partner-Token": token },
-    )
+    // Set cookie and return success (token only in httpOnly cookie, not in response body)
+    const res = NextResponse.json({ success: true })
 
     const cookieName = role === "admin" ? "admin-token" : "part-token"
     // Store token value as-is (no Bearer prefix) per the contract

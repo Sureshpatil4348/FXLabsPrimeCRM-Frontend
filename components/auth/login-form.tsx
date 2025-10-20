@@ -8,7 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { useRouter } from "next/navigation"
-import { saveSession, saveAuthTokens } from "@/lib/auth"
+import { saveSession } from "@/lib/auth"
 
 type LoginFormProps = {
   role: "admin" | "partner"
@@ -46,24 +46,16 @@ export function LoginForm({ role }: LoginFormProps) {
         return
       }
 
-  const payload = (await res.json()) as { [k: string]: string }
+  const payload = (await res.json()) as { success?: boolean }
 
-      // API returns either { "Admin-Token": token } or { "Partner-Token": token }
-      const adminToken = payload["Admin-Token"]
-      const partnerToken = payload["Partner-Token"]
-      const token = adminToken || partnerToken
-
-      if (!token) {
-        setError("Malformed response from server. Please try again.")
+      if (!payload.success) {
+        setError("Unexpected response from server. Please try again.")
         return
       }
 
-      // Save session (cookies are set by server). Keep token in session for client use.
-      saveSession({ email, role, token })
-      // Optionally mirror to localStorage for admin flows using existing helper
-      if (role === "admin") {
-        saveAuthTokens({ adminToken: token })
-      }
+      // Token is now only stored in httpOnly cookie by the server
+      // Session is tracked via cookie, no localStorage needed
+      saveSession({ email, role })
       router.push(role === "admin" ? "/admin" : "/partner")
     } catch (err) {
       setError("Unable to sign in. Please try again.")

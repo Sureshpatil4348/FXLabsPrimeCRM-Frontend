@@ -94,8 +94,8 @@ export default function AddUserPage() {
         body: JSON.stringify(requestBody),
       })
       if (!response.ok) {
-        const errorData = (await response.json()) as { message?: string }
-        throw new Error(errorData.message || "Failed to create users")
+        const errorData = (await response.json().catch(() => null)) as { message?: string; error?: string } | null
+        throw new Error(errorData?.message || errorData?.error || "Failed to create users")
       }
       const data: CreateUserResponse = await response.json()
       setSuccess(data)
@@ -192,7 +192,6 @@ export default function AddUserPage() {
                 onChange={(e) => setFormData({ ...formData, emails: e.target.value })}
                 placeholder="user1@example.com, user2@example.com..."
                 rows={5}
-                required
               />
               <p className="text-sm text-muted-foreground">Enter emails separated by commas or new lines.</p>
             </div>
@@ -235,10 +234,20 @@ export default function AddUserPage() {
                   setCsvFile(file || null)
                   if (!file) return
                   try {
+                    // Validate file size (max 5MB)
+                    const maxSize = 5 * 1024 * 1024
+                    if (file.size > maxSize) {
+                      setError("CSV file size cannot exceed 5MB")
+                      setCsvFile(null)
+                      setCsvEmails([])
+                      return
+                    }
+
                     const text = await file.text()
                     const lines = text.split(/\r?\n/)
                     const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
                     const found = new Set<string>()
+                    
                     for (const raw of lines) {
                       const line = raw.trim()
                       if (!line) continue
@@ -249,6 +258,15 @@ export default function AddUserPage() {
                         }
                       }
                     }
+                    
+                    // Validate email count (max 1000)
+                    if (found.size > 1000) {
+                      setError("CSV contains too many emails (max 1000)")
+                      setCsvFile(null)
+                      setCsvEmails([])
+                      return
+                    }
+                    
                     setCsvEmails(Array.from(found))
                   } catch (err) {
                     setError("Failed to parse CSV file. Please ensure it has an Email column.")

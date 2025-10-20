@@ -5,7 +5,7 @@ import { cookies } from "next/headers"
 // Headers sent upstream:
 // - Authorization: <SUPABASE_PROJECT_ANON_KEY> (no Bearer)
 // - Partner-Token: <partner token from cookie or header> (no Bearer)
-export async function GET() {
+export async function GET(req: Request) {
     try {
         const url =
             process.env.SUPABASE_GET_PARTNER_USERS_FUNCTION_URL ||
@@ -22,15 +22,14 @@ export async function GET() {
         const cookieStore = await cookies()
         // Prefer cookie; allow header override for flexibility in non-browser calls
         const cookiePartner = cookieStore.get("part-token")?.value
+        const headerPartner = req.headers.get("Partner-Token") || req.headers.get("x-partner-token")
 
-        // Support clients passing 'x-partner-token' header by using a fetch Request from the runtime if needed.
-        // Since Next.js route handlers don't give us headers without a Request param for GET,
-        // we will only use cookies here. Clients can set the cookie via /api/custom-login.
-        const partnerToken = cookiePartner || ""
+        // Support both header and cookie sources
+        const partnerToken = headerPartner || cookiePartner || ""
 
         if (!partnerToken) {
             return NextResponse.json(
-                { message: "Unauthorized", details: "Missing part-token cookie" },
+                { message: "Unauthorized", details: "Missing part-token cookie or header" },
                 { status: 401 },
             )
         }

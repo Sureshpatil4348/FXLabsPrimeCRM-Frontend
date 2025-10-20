@@ -5,7 +5,7 @@ import { cookies } from "next/headers"
 // Headers sent upstream:
 // - Authorization: <SUPABASE_PROJECT_ANON_KEY> (no Bearer)
 // - Admin-Token: <admin token from cookie or header> (no Bearer)
-export async function GET() {
+export async function GET(req: Request) {
     try {
         const url =
             process.env.SUPABASE_GET_ADMIN_STATS_FUNCTION_URL ||
@@ -22,15 +22,14 @@ export async function GET() {
         const cookieStore = await cookies()
         // Prefer cookie; allow header override for flexibility in non-browser calls
         const cookieAdmin = cookieStore.get("admin-token")?.value
+        const headerAdmin = req.headers.get("Admin-Token") || req.headers.get("x-admin-token")
 
-        // Support clients passing 'x-admin-token' header by using a fetch Request from the runtime if needed.
-        // Since Next.js route handlers don't give us headers without a Request param for GET,
-        // we will only use cookies here. Clients can set the cookie via /api/custom-login.
-        const adminToken = cookieAdmin || ""
+        // Support both header and cookie sources
+        const adminToken = headerAdmin || cookieAdmin || ""
 
         if (!adminToken) {
             return NextResponse.json(
-                { message: "Unauthorized", details: "Missing admin-token cookie" },
+                { message: "Unauthorized", details: "Missing admin-token cookie or header" },
                 { status: 401 },
             )
         }
