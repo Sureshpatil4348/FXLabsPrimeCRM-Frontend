@@ -31,7 +31,7 @@ export function Sidebar({ role, open, onClose }: SidebarProps) {
       {/* Overlay for mobile */}
       <div
         className={cn(
-          "fixed inset-0 z-20 bg-black/30 md:hidden transition-opacity",
+          "fixed inset-0 z-10 bg-black/30 md:hidden transition-opacity",
           open ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none",
         )}
         onClick={onClose}

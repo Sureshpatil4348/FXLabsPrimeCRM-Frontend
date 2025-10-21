@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server"
 import { cookies } from "next/headers"
+import { validateCsrfProtection } from "@/lib/csrf"
 
 // GET /api/get-admin-stats
 // Headers sent upstream:
@@ -7,6 +8,10 @@ import { cookies } from "next/headers"
 // - Admin-Token: <admin token from cookie or header> (no Bearer)
 export async function GET(req: Request) {
     try {
+        // CSRF protection
+        const csrfError = validateCsrfProtection(req)
+        if (csrfError) return csrfError
+
         const url =
             process.env.SUPABASE_GET_ADMIN_STATS_FUNCTION_URL ||
             "https://kyqtnxhgokczatymraxb.supabase.co/functions/v1/get-admin-stats"
@@ -25,7 +30,7 @@ export async function GET(req: Request) {
         const headerAdmin = req.headers.get("Admin-Token") || req.headers.get("x-admin-token")
 
         // Support both header and cookie sources
-        const adminToken = headerAdmin || cookieAdmin || ""
+        const adminToken = cookieAdmin || headerAdmin || ""
 
         if (!adminToken) {
             return NextResponse.json(

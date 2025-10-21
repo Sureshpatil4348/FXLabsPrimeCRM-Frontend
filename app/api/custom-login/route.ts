@@ -1,9 +1,24 @@
 import { NextResponse } from "next/server"
+import { validateOrigin } from "@/lib/csrf"
 
 // POST /api/custom-login
 // Body: { email: string, password: string, role: "admin" | "partner" }
 export async function POST(req: Request) {
   try {
+    // Origin validation for state-changing requests
+    const originError = validateOrigin(req)
+    if (originError) return originError
+
+    // Validate request body size (100KB limit for login)
+    const contentLength = req.headers.get('content-length')
+    if (contentLength) {
+      const sizeInBytes = parseInt(contentLength, 10)
+      const maxSizeBytes = 100 * 1024 // 100KB
+      if (sizeInBytes > maxSizeBytes) {
+        return NextResponse.json({ message: "Request body too large. Maximum size is 100KB." }, { status: 413 })
+      }
+    }
+
   const body = await req.json()
     const { email, password, role: inputRole } = body as {
       email?: string

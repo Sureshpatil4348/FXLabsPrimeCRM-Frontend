@@ -46,9 +46,9 @@ export function LoginForm({ role }: LoginFormProps) {
         return
       }
 
-  const payload = (await res.json()) as { success?: boolean }
+  const payload = (await res.json()) as { success: boolean }
 
-      if (!payload.success) {
+      if (payload.success !== true) {
         setError("Unexpected response from server. Please try again.")
         return
       }

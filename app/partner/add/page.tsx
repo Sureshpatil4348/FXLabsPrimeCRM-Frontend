@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Alert, AlertDescription } from "@/components/ui/alert"
+import { validateAndParseCSV } from "@/lib/csv-validation"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 
 type UserFormData = {
@@ -188,40 +189,14 @@ export default function AddReferralsPage() {
                     setCsvFile(file || null)
                     if (!file) return
                     try {
-                      // Validate file size (max 5MB)
-                      const maxSize = 5 * 1024 * 1024
-                      if (file.size > maxSize) {
-                        setError("CSV file size cannot exceed 5MB")
+                      const result = await validateAndParseCSV(file)
+                      if (result.error) {
+                        setError(result.error)
                         setCsvFile(null)
                         setCsvEmails([])
                         return
                       }
-
-                      const text = await file.text()
-                      // Extract only values that look like emails from any column
-                      const lines = text.split(/\r?\n/)
-                      const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-                      const found = new Set<string>()
-                      for (const raw of lines) {
-                        const line = raw.trim()
-                        if (!line) continue
-                        const cells = line.split(/,|;|\t/).map((c) => c.trim()).filter(Boolean)
-                        for (const cell of cells) {
-                          if (emailPattern.test(cell)) {
-                            found.add(cell)
-                          }
-                        }
-                      }
-                      
-                      // Validate email count (max 1000)
-                      if (found.size > 1000) {
-                        setError("CSV contains too many emails (max 1000)")
-                        setCsvFile(null)
-                        setCsvEmails([])
-                        return
-                      }
-                      
-                      setCsvEmails(Array.from(found))
+                      setCsvEmails(result.emails)
                     } catch (err) {
                       setError("Failed to parse CSV file. Please ensure it has an Email column.")
                     }

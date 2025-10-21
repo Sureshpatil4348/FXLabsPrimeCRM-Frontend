@@ -55,7 +55,7 @@ export default function MyReferralsPage() {
         const result: PartnerUsersResponse = await res.json()
         setData(result)
       } catch (err) {
-        if ((err as any)?.name !== "AbortError") {
+        if (err instanceof Error && err.name !== "AbortError") {
           console.error("partner/referrals fetch failed:", err)
           setError("Unable to fetch partner users. Please try again.")
         }

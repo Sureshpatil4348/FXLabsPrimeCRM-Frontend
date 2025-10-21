@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server"
 import { cookies } from "next/headers"
+import { validateCsrfProtection } from "@/lib/csrf"
 
 // GET /api/get-partner-users-by-partner
 // Headers sent upstream:
@@ -7,6 +8,10 @@ import { cookies } from "next/headers"
 // - Partner-Token: <partner token from cookie or header> (no Bearer)
 export async function GET(req: Request) {
     try {
+        // CSRF protection
+        const csrfError = validateCsrfProtection(req)
+        if (csrfError) return csrfError
+
         const url =
             process.env.SUPABASE_GET_PARTNER_USERS_FUNCTION_URL ||
             "https://kyqtnxhgokczatymraxb.supabase.co/functions/v1/get-partner-users-by-partner"
@@ -25,7 +30,7 @@ export async function GET(req: Request) {
         const headerPartner = req.headers.get("Partner-Token") || req.headers.get("x-partner-token")
 
         // Support both header and cookie sources
-        const partnerToken = headerPartner || cookiePartner || ""
+        const partnerToken = cookiePartner || headerPartner || ""
 
         if (!partnerToken) {
             return NextResponse.json(
