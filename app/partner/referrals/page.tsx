@@ -40,23 +40,13 @@ export default function MyReferralsPage() {
   const [status, setStatus] = useState<"all" | "invited" | "active" | "inactive" | "converted">("all")
 
   useEffect(() => {
+    const ac = new AbortController()
     async function fetchPartnerUsers() {
       try {
-        let headers: HeadersInit | undefined
-        if (typeof window !== "undefined") {
-          try {
-            const raw = localStorage.getItem("tr-auth-tokens")
-            if (raw) {
-              const tokens = JSON.parse(raw) as { authorization?: string; partnerToken?: string }
-              headers = {
-                ...(tokens.authorization ? { Authorization: tokens.authorization } : {}),
-                ...(tokens.partnerToken ? { "Partner-Token": tokens.partnerToken } : {}),
-              }
-            }
-          } catch {}
-        }
-
-        const res = await fetch("/api/get-partner-users-by-partner", { headers })
+        const res = await fetch("/api/get-partner-users-by-partner", {
+          credentials: "same-origin",
+          signal: ac.signal,
+        })
         if (!res.ok) {
           const err = await res.json()
           setError(err.message || "Failed to fetch partner users")
@@ -65,12 +55,16 @@ export default function MyReferralsPage() {
         const result: PartnerUsersResponse = await res.json()
         setData(result)
       } catch (err) {
-        setError("Unable to fetch partner users. Please try again.")
+        if (err instanceof Error && err.name !== "AbortError") {
+          console.error("partner/referrals fetch failed:", err)
+          setError("Unable to fetch partner users. Please try again.")
+        }
       } finally {
         setLoading(false)
       }
     }
     fetchPartnerUsers()
+    return () => ac.abort()
   }, [])
 
   const filtered = useMemo(() => {

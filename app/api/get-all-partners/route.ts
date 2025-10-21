@@ -1,12 +1,17 @@
 import { NextResponse } from "next/server"
 import { cookies } from "next/headers"
+import { validateCsrfProtection } from "@/lib/csrf"
 
 // GET /api/get-all-partners
 // Headers sent upstream:
 // - Authorization: <SUPABASE_PROJECT_ANON_KEY> (no Bearer)
 // - Admin-Token: <admin token from cookie or header> (no Bearer)
-export async function GET() {
+export async function GET(req: Request) {
     try {
+        // CSRF protection
+        const csrfError = validateCsrfProtection(req)
+        if (csrfError) return csrfError
+
         const url =
             process.env.SUPABASE_GET_ALL_PARTNERS_FUNCTION_URL ||
             "https://kyqtnxhgokczatymraxb.supabase.co/functions/v1/get-all-partners"
@@ -22,15 +27,14 @@ export async function GET() {
         const cookieStore = await cookies()
         // Prefer cookie; allow header override for flexibility in non-browser calls
         const cookieAdmin = cookieStore.get("admin-token")?.value
+        const headerAdmin = req.headers.get("Admin-Token") || req.headers.get("x-admin-token")
 
-        // Support clients passing 'x-admin-token' header by using a fetch Request from the runtime if needed.
-        // Since Next.js route handlers don't give us headers without a Request param for GET,
-        // we will only use cookies here. Clients can set the cookie via /api/custom-login.
-        const adminToken = cookieAdmin || ""
+        // Support both header and cookie sources
+        const adminToken = cookieAdmin || headerAdmin || ""
 
         if (!adminToken) {
             return NextResponse.json(
-                { message: "Unauthorized", details: "Missing admin-token cookie" },
+                { message: "Unauthorized", details: "Missing admin-token cookie or header" },
                 { status: 401 },
             )
         }

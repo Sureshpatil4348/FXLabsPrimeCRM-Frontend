@@ -19,7 +19,7 @@ type PartnerStats = {
     total_active: number
     total_expired: number
     users_by_region: Record<string, number>
-    recent_users_30_days: number
+    recent_signups_30_days: number
     last_month_conversions: number
     conversion_rate: number
   }
@@ -40,30 +40,14 @@ export default function partnerDashboardPage() {
   useEffect(() => {
     async function fetchStats() {
       try {
-        let headers: HeadersInit | undefined
-        if (typeof window !== "undefined") {
-          try {
-            const raw = localStorage.getItem("tr-auth-tokens")
-            if (raw) {
-              const tokens = JSON.parse(raw) as { authorization?: string; partnerToken?: string }
-              headers = {
-                ...(tokens.authorization ? { Authorization: tokens.authorization } : {}),
-                ...(tokens.partnerToken ? { "Partner-Token": tokens.partnerToken } : {}),
-              }
-            }
-          } catch {}
-        }
-
-        const res = await fetch("/api/get-partner-stats", { headers })
+        // Token is now stored only in httpOnly cookie, sent automatically by browser
+        const res = await fetch("/api/get-partner-stats")
         if (!res.ok) {
           const err = await res.json()
           setError(err.message || "Failed to fetch stats")
           return
         }
         const result: PartnerStats = await res.json()
-        console.log('API Response:', result)
-        console.log('Users object:', result.users)
-        console.log('Partner object:', result.partner)
         setStats(result)
       } catch (err) {
         setError("Unable to fetch stats. Please try again.")
@@ -130,7 +114,7 @@ export default function partnerDashboardPage() {
         <StatsCard label="Active" value={stats.users.total_active} />
         <StatsCard label="Expired" value={stats.users.total_expired} />
         <StatsCard label="Conversion Rate" value={`${conversionRate}%`} />
-        <StatsCard label="Recent Users (30d)" value={stats.users.recent_users_30_days} />
+        <StatsCard label="Recent Users (30d)" value={stats.users.recent_signups_30_days} />
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">

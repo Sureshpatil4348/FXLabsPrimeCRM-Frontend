@@ -1,12 +1,24 @@
 import { NextResponse } from "next/server"
 import { cookies } from "next/headers"
+import { validateOrigin } from "@/lib/csrf"
 
-// POST /api/create-admin
-// Headers upstream:
-// - Authorization: SUPABASE_PROJECT_ANON_KEY (no Bearer)
-// - Admin-Token: value from cookie (no Bearer)
+
 export async function POST(req: Request) {
   try {
+    // Origin validation for state-changing requests
+    const originError = validateOrigin(req)
+    if (originError) return originError
+
+    // Validate request body size (1MB limit for admin creation)
+    const contentLength = req.headers.get('content-length')
+    if (contentLength) {
+      const sizeInBytes = parseInt(contentLength, 10)
+      const maxSizeBytes = 1 * 1024 * 1024 // 1MB
+      if (sizeInBytes > maxSizeBytes) {
+        return NextResponse.json({ error: "Request body too large. Maximum size is 1MB." }, { status: 413 })
+      }
+    }
+
     const body = await req.json()
     const { email, full_name, password, current_admin_password } = body as {
       email?: string

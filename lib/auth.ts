@@ -1,10 +1,5 @@
 export type Role = "admin" | "partner"
 
-const DEFAULT_USERS: Record<string, { password: string; role: Role }> = {
-  "admin@123.com": { password: "123456", role: "admin" },
-  "inf@123.com": { password: "123456", role: "partner" },
-}
-
 const SESSION_KEY = "tr-referral-session"
 const AUTH_TOKENS_KEY = "tr-auth-tokens"
 
@@ -21,9 +16,9 @@ export type AuthTokens = {
 }
 
 export function verifyCredentials(email: string, password: string, expectedRole: Role): boolean {
-  const user = DEFAULT_USERS[email.trim().toLowerCase()]
-  if (!user) return false
-  return user.password === password && user.role === expectedRole
+  // Credentials are verified by backend only. This function is deprecated.
+  // All authentication must go through /api/custom-login endpoint.
+  return false
 }
 
 export function saveSession(session: Session) {

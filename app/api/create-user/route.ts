@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server"
 import { cookies } from "next/headers"
+import { validateOrigin } from "@/lib/csrf"
 
 // POST /api/create-user
 // Headers upstream:
@@ -8,6 +9,20 @@ import { cookies } from "next/headers"
 // - Partner-Token: value from cookie/header (no Bearer) for partner
 export async function POST(req: Request) {
   try {
+    // Origin validation for state-changing requests
+    const originError = validateOrigin(req)
+    if (originError) return originError
+
+    // Validate request body size (10MB limit to account for JSON overhead)
+    const contentLength = req.headers.get('content-length')
+    if (contentLength) {
+      const sizeInBytes = parseInt(contentLength, 10)
+      const maxSizeBytes = 10 * 1024 * 1024 // 10MB
+      if (sizeInBytes > maxSizeBytes) {
+        return NextResponse.json({ error: "Request body too large. Maximum size is 10MB." }, { status: 413 })
+      }
+    }
+
     const body = await req.json()
     const { users, region, trial_days, emails } = body as {
       users?: Array<{ email: string } | string>
@@ -36,6 +51,11 @@ export async function POST(req: Request) {
 
     if (!userArray || userArray.length === 0) {
       return NextResponse.json({ error: "No valid emails provided" }, { status: 400 })
+    }
+
+    // Validate email count limit (1000 max)
+    if (userArray.length > 1000) {
+      return NextResponse.json({ error: "Too many emails; maximum 1000 allowed" }, { status: 422 })
     }
 
     // Validate emails

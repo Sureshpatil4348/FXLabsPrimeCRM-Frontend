@@ -38,30 +38,14 @@ export default function AdminDashboardPage() {
   useEffect(() => {
     async function fetchStats() {
       try {
-        let headers: HeadersInit | undefined
-        if (typeof window !== "undefined") {
-          try {
-            const raw = localStorage.getItem("tr-auth-tokens")
-            if (raw) {
-              const tokens = JSON.parse(raw) as { authorization?: string; adminToken?: string }
-              headers = {
-                ...(tokens.authorization ? { Authorization: tokens.authorization } : {}),
-                ...(tokens.adminToken ? { "Admin-Token": tokens.adminToken } : {}),
-              }
-            }
-          } catch {}
-        }
-
-        const res = await fetch("/api/get-admin-stats", { headers })
+        // Token is now stored only in httpOnly cookie, sent automatically by browser
+        const res = await fetch("/api/get-admin-stats")
         if (!res.ok) {
           const err = await res.json()
           setError(err.message || "Failed to fetch stats")
           return
         }
         const result: AdminStats = await res.json()
-        console.log('Admin API Response:', result)
-        console.log('Users object:', result.users)
-        console.log('Revenue object:', result.revenue)
         setStats(result)
       } catch (err) {
         setError("Unable to fetch stats. Please try again.")

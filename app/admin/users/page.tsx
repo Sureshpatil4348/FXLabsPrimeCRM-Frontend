@@ -8,7 +8,7 @@ type User = {
   region: string | null
   subscription_status: string | null
   subscription_ends_at: string | null
-  has_stripe_account: boolean
+  has_paid: boolean
   total_spent: number
   converted_at: string | null
   created_at: string | null
@@ -39,28 +39,15 @@ export default function AdminUsersPage() {
   useEffect(() => {
     async function fetchUsers() {
       try {
-        let headers: HeadersInit | undefined
-        if (typeof window !== "undefined") {
-          try {
-            const raw = localStorage.getItem("tr-auth-tokens")
-            if (raw) {
-              const tokens = JSON.parse(raw) as { authorization?: string; adminToken?: string }
-              headers = {
-                ...(tokens.authorization ? { Authorization: tokens.authorization } : {}),
-                ...(tokens.adminToken ? { "Admin-Token": tokens.adminToken } : {}),
-              }
-            }
-          } catch {}
-        }
-
-  const res = await fetch("/api/get-all-users", { headers })
+        // Token is now stored only in httpOnly cookie, sent automatically by browser
+        const res = await fetch("/api/get-all-users")
         if (!res.ok) {
           const err = await res.json()
           setError(err.message || "Failed to fetch users")
           return
         }
-  const result: UsersResponse = await res.json()
-  setData(result)
+        const result: UsersResponse = await res.json()
+        setData(result)
       } catch (err) {
         setError("Unable to fetch users. Please try again.")
       } finally {
@@ -132,7 +119,7 @@ export default function AdminUsersPage() {
                   <td className="px-4 py-2">
                     {u.subscription_ends_at ? new Date(u.subscription_ends_at).toLocaleString() : "-"}
                   </td>
-                  <td className="px-4 py-2">{u.has_stripe_account ? "Yes" : "No"}</td>
+                  <td className="px-4 py-2">{u.has_paid ? "Yes" : "No"}</td>
                   <td className="px-4 py-2">${u.total_spent.toFixed(2)}</td>
                   <td className="px-4 py-2">
                     {u.converted_at ? new Date(u.converted_at).toLocaleString() : "-"}

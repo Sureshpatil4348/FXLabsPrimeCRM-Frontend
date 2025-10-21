@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Alert, AlertDescription } from "@/components/ui/alert"
+import { validateAndParseCSV } from "@/lib/csv-validation"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 
 type UserFormData = {
@@ -110,8 +111,8 @@ export default function AddReferralsPage() {
       })
 
       if (!response.ok) {
-        const errorData = (await response.json()) as { message?: string }
-        throw new Error(errorData.message || "Failed to create users")
+        const errorData = (await response.json().catch(() => null)) as { message?: string; error?: string } | null
+        throw new Error(errorData?.message || errorData?.error || "Failed to create users")
       }
 
       const data: CreateUserResponse = await response.json()
@@ -146,7 +147,6 @@ export default function AddReferralsPage() {
                   onChange={(e) => setFormData({ ...formData, emails: e.target.value })}
                   placeholder="user1@example.com, user2@example.com..."
                   rows={5}
-                  required
                 />
                 <p className="text-sm text-muted-foreground">Enter emails separated by commas or new lines.</p>
               </div>
@@ -189,22 +189,14 @@ export default function AddReferralsPage() {
                     setCsvFile(file || null)
                     if (!file) return
                     try {
-                      const text = await file.text()
-                      // Extract only values that look like emails from any column
-                      const lines = text.split(/\r?\n/)
-                      const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-                      const found = new Set<string>()
-                      for (const raw of lines) {
-                        const line = raw.trim()
-                        if (!line) continue
-                        const cells = line.split(/,|;|\t/).map((c) => c.trim()).filter(Boolean)
-                        for (const cell of cells) {
-                          if (emailPattern.test(cell)) {
-                            found.add(cell)
-                          }
-                        }
+                      const result = await validateAndParseCSV(file)
+                      if (result.error) {
+                        setError(result.error)
+                        setCsvFile(null)
+                        setCsvEmails([])
+                        return
                       }
-                      setCsvEmails(Array.from(found))
+                      setCsvEmails(result.emails)
                     } catch (err) {
                       setError("Failed to parse CSV file. Please ensure it has an Email column.")
                     }
