@@ -11,7 +11,12 @@ export function Navbar({ onToggleSidebar }: { onToggleSidebar?: () => void }) {
   const router = useRouter()
 
   useEffect(() => {
-    setSession(getSession())
+    // Use setTimeout to avoid synchronous setState in effect
+    const timer = setTimeout(() => {
+      setSession(getSession())
+    }, 0)
+    
+    return () => clearTimeout(timer)
   }, [])
 
   async function handleLogout() {

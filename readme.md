@@ -212,12 +212,13 @@ Comprehensive set of reusable components built on Radix UI:
 
 ### ESLint Configuration
 
-The project uses ESLint with Next.js core web vitals configuration for code quality and consistency:
+The project uses ESLint 9.x with Next.js core web vitals configuration for code quality and consistency:
 
--   **Configuration**: `.eslintrc.json` with `next/core-web-vitals` preset
+-   **Configuration**: `eslint.config.js` with flat config format (ESLint 9.x)
 -   **Rules**: Enforces React best practices, accessibility standards, and performance optimizations
 -   **Command**: `npm run lint` to check for errors and warnings
 -   **CI Integration**: Runs automatically in CI/CD pipeline with `CI=true npm run lint`
+-   **Module Type**: Configured as ES module in `package.json`
 
 ## Deployment
 
