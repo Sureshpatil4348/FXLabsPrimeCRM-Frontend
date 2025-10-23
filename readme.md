@@ -206,9 +206,18 @@ Comprehensive set of reusable components built on Radix UI:
 ### Code Style
 
 -   TypeScript for type safety
--   ESLint for code quality
+-   ESLint for code quality (configured with Next.js strict rules)
 -   Tailwind CSS for consistent styling
 -   Component-based architecture
+
+### ESLint Configuration
+
+The project uses ESLint with Next.js core web vitals configuration for code quality and consistency:
+
+-   **Configuration**: `.eslintrc.json` with `next/core-web-vitals` preset
+-   **Rules**: Enforces React best practices, accessibility standards, and performance optimizations
+-   **Command**: `npm run lint` to check for errors and warnings
+-   **CI Integration**: Runs automatically in CI/CD pipeline with `CI=true npm run lint`
 
 ## Deployment
 

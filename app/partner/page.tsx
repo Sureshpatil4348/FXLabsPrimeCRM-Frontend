@@ -32,7 +32,7 @@ type PartnerStats = {
   generated_at: string
 }
 
-export default function partnerDashboardPage() {
+export default function PartnerDashboardPage() {
   const [stats, setStats] = useState<PartnerStats | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
