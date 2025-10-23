@@ -38,12 +38,7 @@ jobs:
           echo "npm version: $(npm --version)"
           echo "Installed packages:"
           npm list --depth=0
-          
-      - name: Verify Lottie dependency
-        run: |
-          echo "Checking Lottie dependency:"
-          npm list @lottiefiles/dotlottie-react
-
+        
       - name: Run linting (CI - treat warnings as errors)
         run: CI=true npm run lint
 
