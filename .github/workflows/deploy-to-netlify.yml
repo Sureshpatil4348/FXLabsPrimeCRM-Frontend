@@ -42,33 +42,26 @@ jobs:
       - name: Run linting (CI - treat warnings as errors)
         run: CI=true npm run lint
 
-      - name: Build project
-        run: npm run build
-        
-      - name: Verify build output
-        run: |
-          echo "Build directory contents:"
-          ls -la build/
-          echo "Static files:"
-          ls -la build/static/
+      # Netlify Build (via CLI) will run the build using netlify.toml and the Next.js plugin.
+      # We no longer run a manual build or check a hardcoded build/ folder.
 
       - name: Deploy to Netlify (production site)
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-        run: netlify deploy --prod --dir=build --message="Deploy from GitHub Actions - ${{ github.sha }} (main)"
+        run: netlify deploy --build --prod --message="Deploy from GitHub Actions - ${{ github.sha }} (main)"
         env:
           NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
           NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}
 
       - name: Deploy to Netlify (QA site)
-        if: github.event_name == 'push' && github.ref == 'refs/heads/asoasis/development'
-        run: netlify deploy --prod --dir=build --message="Deploy from GitHub Actions - ${{ github.sha }} (asoasis/development)"
+        if: github.event_name == 'push' && github.ref == 'refs/heads/development'
+        run: netlify deploy --build --prod --message="Deploy from GitHub Actions - ${{ github.sha }} (development)"
         env:
           NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
           NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID_QA }}
 
       - name: Deploy to Netlify (DEV site for PRs)
-        if: github.event_name == 'pull_request' && github.base_ref == 'asoasis/development'
-        run: netlify deploy --prod --dir=build --message="Deploy from GitHub Actions - ${{ github.sha }} (PR to asoasis/development)"
+        if: github.event_name == 'pull_request' && github.base_ref == 'development'
+        run: netlify deploy --build --prod --message="Deploy from GitHub Actions - ${{ github.sha }} (PR to development)"
         env:
           NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
           NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID_DEV }}
