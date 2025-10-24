@@ -183,7 +183,7 @@ export default function PartnerUsersPage() {
 
       {!data && !loading && !error && partnerId && (
         <div className="text-center py-8 text-gray-500">
-          Enter a partner ID and click "Get Users" to view partner users.
+          Enter a partner ID and click &quot;Get Users&quot; to view partner users.
         </div>
       )}
     </main>
