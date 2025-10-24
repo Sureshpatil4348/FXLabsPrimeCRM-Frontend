@@ -4,6 +4,9 @@ import { useEffect, useState } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
+import { Copy, Check } from "lucide-react"
+import { useToast } from "@/hooks/use-toast"
 
 type Partner = {
   partner_id: string
@@ -35,6 +38,26 @@ export default function AdminPartnersPage() {
   const [data, setData] = useState<PartnersResponse | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [copiedId, setCopiedId] = useState<string | null>(null)
+  const { toast } = useToast()
+
+  const copyPartnerId = async (partnerId: string) => {
+    try {
+      await navigator.clipboard.writeText(partnerId)
+      setCopiedId(partnerId)
+      toast({
+        title: "Partner ID copied",
+        description: "Partner ID has been copied to clipboard",
+      })
+      setTimeout(() => setCopiedId(null), 2000)
+    } catch (err) {
+      toast({
+        title: "Failed to copy",
+        description: "Could not copy partner ID to clipboard",
+        variant: "destructive",
+      })
+    }
+  }
 
   useEffect(() => {
     async function fetchPartners() {
@@ -147,6 +170,7 @@ export default function AdminPartnersPage() {
                 <TableHead>Total Added</TableHead>
                 <TableHead>Total Converted</TableHead>
                 <TableHead>Created</TableHead>
+                <TableHead>Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -159,6 +183,21 @@ export default function AdminPartnersPage() {
                   <TableCell>{partner.total_added}</TableCell>
                   <TableCell>{partner.total_converted}</TableCell>
                   <TableCell>{new Date(partner.created_at).toLocaleDateString()}</TableCell>
+                  <TableCell>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => copyPartnerId(partner.partner_id)}
+                      className="flex items-center gap-2 cursor-pointer"
+                    >
+                      {copiedId === partner.partner_id ? (
+                        <Check className="h-4 w-4 text-green-600" />
+                      ) : (
+                        <Copy className="h-4 w-4" />
+                      )}
+                      {copiedId === partner.partner_id ? "Copied!" : "Copy ID"}
+                    </Button>
+                  </TableCell>
                 </TableRow>
               ))}
             </TableBody>

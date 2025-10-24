@@ -1,0 +1,54 @@
+[33mcommit ccbcb3421dfde2fce0e5438d9b3d7e15745ca180[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mpartner-dashboard[m[33m)[m
+Author: rejzzzz <156344567+rejzzzz@users.noreply.github.com>
+Date:   Sat Oct 25 01:13:20 2025 +0530
+
+    fix: synced with prod
+
+[33mcommit c5db180626fdef3902a349637c72c48cccf0da4e[m[33m ([m[1;31morigin/partner-dashboard[m[33m)[m
+Author: rejzzzz <156344567+rejzzzz@users.noreply.github.com>
+Date:   Tue Oct 21 10:39:32 2025 +0530
+
+    fix: CSRF, CSV validation, limit email uploads to 1000, limited request size
+
+[33mcommit 58430a23baf2cd96bbfb8e516fed17feb6a6ca9e[m
+Author: rejzzzz <156344567+rejzzzz@users.noreply.github.com>
+Date:   Tue Oct 21 00:46:59 2025 +0530
+
+    fixed previous flaws
+
+[33mcommit 77ac5c2822b725077b8fa58e8f23cd2f220e571e[m
+Author: rejzzzz <156344567+rejzzzz@users.noreply.github.com>
+Date:   Mon Oct 20 20:14:42 2025 +0530
+
+    frontend is now fully integrated with the backend supabase edge-functions
+
+[33mcommit 69a4f0768c8fea3cfebb82cbeccd1d98c31a7e58[m[33m ([m[1;31morigin/main[m[33m, [m[1;32mmain[m[33m)[m
+Merge: 0e6822f cfac216
+Author: rejzzzz <156344567+rejzzzz@users.noreply.github.com>
+Date:   Sat Oct 18 23:44:05 2025 +0530
+
+    Resolved merge conflict in readme.md
+
+[33mcommit 0e6822f1eb335f6612203f026133634138d39862[m
+Author: rejzzzz <156344567+rejzzzz@users.noreply.github.com>
+Date:   Sat Oct 18 23:41:06 2025 +0530
+
+    admin dashboard is working perfect
+
+[33mcommit cfac216902188d466f3a9bd63f119bfae06870f5[m
+Author: client-system-developer-2232 <client-system-developer-2232@asoasis.tech>
+Date:   Mon Oct 13 23:25:39 2025 +0530
+
+    Update readme.md
+
+[33mcommit 0475b341d8ab4f891c47b8320fcc04fc72bc70b6[m
+Author: client-system-developer-2232 <client-system-developer-2232@asoasis.tech>
+Date:   Mon Oct 13 23:23:40 2025 +0530
+
+    Update readme.md
+
+[33mcommit 1e91180dd809505cb6ab257dfcf15e82959bd76e[m
+Author: Rejwanul Hoque <hoquerejwanulrh@gmail.com>
+Date:   Mon Oct 13 23:18:44 2025 +0530
+
+    initial design of the dashboards
