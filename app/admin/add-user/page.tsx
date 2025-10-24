@@ -23,8 +23,13 @@ type CreateUserResponse = {
     created: number
     existing: number
     failed: number
+    emails_sent?: number
   }
-  created_users: Array<{ email: string }>
+  created_users: Array<{ 
+    email: string
+    email_sent?: boolean
+    email_error?: string | null
+  }>
   existing_users: Array<{ email: string; reason?: string }>
   failed_users: Array<any>
   trial_days: number
@@ -130,6 +135,7 @@ export default function AddUserPage() {
               <p className="font-medium">{success.message}</p>
               <p>
                 Summary: {success.summary.created} created, {success.summary.existing} existing, {success.summary.failed} failed
+                {success.summary.emails_sent !== undefined && `, ${success.summary.emails_sent} emails sent`}
               </p>
               {success.region && <p className="text-sm">Region: {success.region}</p>}
 
@@ -140,6 +146,16 @@ export default function AddUserPage() {
                     {success.created_users.map((user, index) => (
                       <li key={index} className="text-green-600">
                         {user.email}
+                        {user.email_sent === false && (
+                          <span className="text-orange-600 ml-2">
+                            ⚠️ Email not sent - Account created, contact admin to reset password and send email
+                          </span>
+                        )}
+                        {user.email_error && (
+                          <span className="text-red-600 ml-2">
+                            (Error: {user.email_error})
+                          </span>
+                        )}
                       </li>
                     ))}
                   </ul>
