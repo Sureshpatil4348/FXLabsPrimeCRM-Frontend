@@ -117,8 +117,7 @@ async function PartnerStatsContent() {
             page. Add new prospects via{" "}
             <a className="underline" href="/partner/add">
               Add Referrals
-            </a>{" "}
-            or create a
+            </a>
             .
           </p>
         </div>
@@ -142,7 +141,7 @@ async function PartnerStatsContent() {
   }
 }
 
-export default function partnerDashboardPage() {
+export default function PartnerDashboardPage() {
   return (
     <Suspense fallback={<PartnerStatsPageSkeleton />}>
       <PartnerStatsContent />

@@ -206,17 +206,44 @@ Comprehensive set of reusable components built on Radix UI:
 ### Code Style
 
 -   TypeScript for type safety
--   ESLint for code quality
+-   ESLint for code quality (configured with Next.js strict rules)
 -   Tailwind CSS for consistent styling
 -   Component-based architecture
 
+### ESLint Configuration
+
+The project uses ESLint 9.x with Next.js core web vitals configuration for code quality and consistency:
+
+-   **Configuration**: `eslint.config.js` with flat config format (ESLint 9.x)
+-   **Rules**: Enforces React best practices, accessibility standards, and performance optimizations
+-   **Command**: `npm run lint` to check for errors and warnings
+-   **CI Integration**: Runs automatically in CI/CD pipeline with `CI=true npm run lint`
+-   **Module Type**: Configured as ES module in `package.json`
+
 ## Deployment
 
-This application is configured for deployment on Vercel with:
+This application is configured for deployment on Netlify via GitHub Actions with the official Next.js on Netlify plugin.
 
--   Automatic deployments from main branch
--   Analytics integration
--   Optimized build settings
+-   CI/CD: `.github/workflows/deploy-to-netlify.yml`
+-   Builder: Netlify Build (triggered via `netlify deploy --build`)
+-   Plugin: `@netlify/plugin-nextjs` (configured in `netlify.toml`)
+-   Publish target: handled by the plugin based on `.next`
+-   Branches:
+    -   `main` → Production site (`NETLIFY_SITE_ID`)
+    -   `development` → QA site (`NETLIFY_SITE_ID_QA`)
+    -   PRs targeting `development` → DEV site (`NETLIFY_SITE_ID_DEV`)
+
+Required GitHub Secrets:
+
+-   `NETLIFY_AUTH_TOKEN` – Personal access token for Netlify
+-   `NETLIFY_SITE_ID` – Production site ID
+-   `NETLIFY_SITE_ID_QA` – QA site ID
+-   `NETLIFY_SITE_ID_DEV` – DEV site ID for PR builds
+
+Notes:
+
+-   The workflow no longer assumes a `build/` folder. Next.js builds into `.next`, and the Netlify plugin takes care of adapting the output for Netlify.
+-   Linting runs in CI with `CI=true npm run lint` and fails on warnings; fix warnings locally before pushing.
 
 ## Contributing
 

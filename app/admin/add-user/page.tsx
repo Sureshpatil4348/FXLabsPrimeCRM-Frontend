@@ -282,7 +282,7 @@ export default function AddUserPage() {
                   </Button>
                 </div>
               )}
-              <p className="text-sm text-muted-foreground">We'll only extract valid emails from the CSV and de-duplicate them.</p>
+              <p className="text-sm text-muted-foreground">We&apos;ll only extract valid emails from the CSV and de-duplicate them.</p>
             </div>
 
             {previewEmails.length > 0 && (
