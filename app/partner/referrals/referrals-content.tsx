@@ -44,7 +44,7 @@ export default function ReferralsContentClient({ data }: { data: PartnerUsersRes
       const matchesStatus = status === "all" || user.subscription_status === status
       return matchesSearch && matchesStatus
     })
-  }, [q, status])
+  }, [q, status, data.users])
 
   const getStatusBadgeVariant = (status: string) => {
     switch (status) {
