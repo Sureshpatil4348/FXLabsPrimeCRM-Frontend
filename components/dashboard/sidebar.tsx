@@ -1,7 +1,9 @@
 "use client"
 
 import Link from "next/link"
+import { usePathname } from "next/navigation"
 import { cn } from "@/lib/utils"
+import { BarChart3, Users, UserPlus, Shield, Building2, UserCheck, FileText } from "lucide-react"
 
 type SidebarProps = {
   role: "admin" | "partner"
@@ -10,59 +12,60 @@ type SidebarProps = {
 }
 
 export function Sidebar({ role, open, onClose }: SidebarProps) {
+  const pathname = usePathname()
+
   const adminItems = [
-    { href: "/admin", label: "Dashboard" },
-    { href: "/admin/partners", label: "Partners" },
-    
-    { href: "/admin/create-partner", label: "Create Partner" },
-    { href: "/admin/create-admin", label: "Create Admin" },
-    { href: "/admin/add-user", label: "Add User" },
-    { href: "/admin/users", label: "All Users" },
-    { href: "/admin/partner-users", label: "Get Users by Partner" },
+    { href: "/admin", label: "Dashboard", icon: BarChart3 },
+    { href: "/admin/partners", label: "Partners", icon: Building2 },
+    { href: "/admin/create-partner", label: "Create Partner", icon: UserPlus },
+    { href: "/admin/create-admin", label: "Create Admin", icon: Shield },
+    { href: "/admin/add-user", label: "Add User", icon: UserPlus },
+    { href: "/admin/users", label: "All Users", icon: Users },
+    { href: "/admin/partner-users", label: "Get Users by Partner", icon: UserCheck },
   ]
+
   const partnerItems = [
-    { href: "/partner", label: "Dashboard" },
-    { href: "/partner/referrals", label: "My Referrals" },
-    { href: "/partner/add", label: "Add Referrals" },
-   
+    { href: "/partner", label: "Dashboard", icon: BarChart3 },
+    { href: "/partner/referrals", label: "My Referrals", icon: FileText },
+    { href: "/partner/add", label: "Add Referrals", icon: UserPlus },
   ]
+
   const items = role === "admin" ? adminItems : partnerItems
 
   return (
-    <>
-      {/* Overlay for mobile */}
-      <div
-        className={cn(
-          "fixed inset-0 z-10 bg-black/30 md:hidden transition-opacity",
-          open ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none",
-        )}
-        onClick={onClose}
-        aria-hidden={!open}
-      />
-      <aside
-        className={cn(
-          "fixed md:static z-20 top-14 md:top-0 left-0 h-[calc(100dvh-3.5rem)] md:h-[100dvh] w-72 shrink-0 border-r border-border bg-[var(--sidebar)]",
-          "transition-transform md:transition-none",
-          open ? "translate-x-0" : "-translate-x-full md:translate-x-0",
-        )}
-        aria-label="Sidebar"
-      >
-        <nav className="p-3">
-          <ul className="grid gap-1">
-            {items.map((item) => (
-              <li key={item.href}>
-                <Link
-                  href={item.href}
-                  className={cn("block rounded-md px-3 py-2 text-sm hover:bg-secondary")}
-                  onClick={onClose}
-                >
-                  {item.label}
-                </Link>
-              </li>
-            ))}
+    <aside className="h-full bg-transparent">
+      <nav className="p-4">
+        <div className="space-y-2">
+          <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 px-2">
+            {role === "admin" ? "Admin Panel" : "Partner Panel"}
+          </h2>
+          <ul className="space-y-1">
+            {items.map((item) => {
+              const Icon = item.icon
+              const isActive = pathname === item.href
+
+              return (
+                <li key={item.href}>
+                  <Link
+                    href={item.href}
+                    className={cn(
+                      "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-200",
+                      "hover:bg-emerald-50 hover:text-emerald-700 dark:hover:bg-emerald-900/20 dark:hover:text-emerald-300",
+                      isActive
+                        ? "bg-emerald-100 text-emerald-800 border border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-200 dark:border-emerald-700"
+                        : "text-gray-700 dark:text-gray-300"
+                    )}
+                    onClick={onClose}
+                  >
+                    <Icon className="w-4 h-4" />
+                    <span>{item.label}</span>
+                  </Link>
+                </li>
+              )
+            })}
           </ul>
-        </nav>
-      </aside>
-    </>
+        </div>
+      </nav>
+    </aside>
   )
 }
