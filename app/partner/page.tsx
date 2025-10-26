@@ -63,7 +63,7 @@ function PartnerStatsContent() {
         <StatsCard label="Total Users" value={partnerStats.users.total_users} />
         <StatsCard label="Active" value={partnerStats.users.total_active} />
         <StatsCard label="Expired" value={partnerStats.users.total_expired} />
-        <StatsCard label="Recent Users (30d)" value={partnerStats.users.recent_signups_30_days} />
+        <StatsCard label="Recent Users (30d)" value={partnerStats.users.recent_users_30_days} />
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">

@@ -90,7 +90,9 @@ export function DashboardShell({
 }) {
   return (
     <DashboardProvider>
-      <DashboardContent role={role} children={children} />
+      <DashboardContent role={role}>
+        {children}
+      </DashboardContent>
     </DashboardProvider>
   )
 }
