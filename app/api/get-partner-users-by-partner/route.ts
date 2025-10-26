@@ -6,6 +6,9 @@ import { validateCsrfProtection } from "@/lib/csrf"
 // Headers sent upstream:
 // - Authorization: <SUPABASE_PROJECT_ANON_KEY> (no Bearer)
 // - Partner-Token: <partner token from cookie or header> (no Bearer)
+// - Admin-Token: <admin token from cookie or header> (no Bearer) - for admin access
+// Query params (for admin access):
+// - partner_id: <partner id to get users for>
 export async function GET(req: Request) {
     try {
         // CSRF protection
@@ -25,26 +28,52 @@ export async function GET(req: Request) {
         }
 
         const cookieStore = await cookies()
-        // Prefer cookie; allow header override for flexibility in non-browser calls
+        
+        // Check for admin token first (allows querying any partner's users)
+        const cookieAdmin = cookieStore.get("admin-token")?.value
+        const headerAdmin = req.headers.get("Admin-Token") || req.headers.get("x-admin-token")
+        const adminToken = cookieAdmin || headerAdmin || ""
+        
+        // Check for partner token (for partner self-access)
         const cookiePartner = cookieStore.get("part-token")?.value
         const headerPartner = req.headers.get("Partner-Token") || req.headers.get("x-partner-token")
-
-        // Support both header and cookie sources
         const partnerToken = cookiePartner || headerPartner || ""
 
-        if (!partnerToken) {
+        // Parse query parameters for admin access
+        const { searchParams } = new URL(req.url)
+        const partnerId = searchParams.get("partner_id")
+
+        // Authorization logic
+        let token = ""
+        let tokenHeader = ""
+        
+        if (adminToken) {
+            // Admin access - can query any partner
+            token = adminToken
+            tokenHeader = "Admin-Token"
+        } else if (partnerToken) {
+            // Partner access - can only query their own users
+            token = partnerToken
+            tokenHeader = "Partner-Token"
+        } else {
             return NextResponse.json(
-                { message: "Unauthorized", details: "Missing part-token cookie or header" },
+                { message: "Unauthorized", details: "Missing admin-token or part-token cookie or header" },
                 { status: 401 },
             )
         }
 
-        const upstream = await fetch(url, {
+        // Build upstream URL with partner_id if provided (admin access)
+        let upstreamUrl = url
+        if (partnerId && adminToken) {
+            upstreamUrl += `?partner_id=${encodeURIComponent(partnerId)}`
+        }
+
+        const upstream = await fetch(upstreamUrl, {
             method: "GET",
             headers: {
                 "Content-Type": "application/json",
                 Authorization: anon,
-                "Partner-Token": partnerToken, // no Bearer prefix
+                [tokenHeader]: token, // Use the appropriate token header
             },
             cache: "no-store",
         })

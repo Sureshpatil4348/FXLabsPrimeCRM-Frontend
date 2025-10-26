@@ -1,6 +1,5 @@
-"use client"
-
-import { useEffect, useState } from "react"
+import { Suspense } from "react"
+import { UsersTableSkeleton } from "@/components/dashboard/skeleton-table"
 
 type User = {
   user_id: string
@@ -31,110 +30,97 @@ type UsersResponse = {
   }
 }
 
-export default function AdminUsersPage() {
-  const [data, setData] = useState<UsersResponse | null>(null)
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
-
-  useEffect(() => {
-    async function fetchUsers() {
-      try {
-        // Token is now stored only in httpOnly cookie, sent automatically by browser
-        const res = await fetch("/api/get-all-users")
-        if (!res.ok) {
-          const err = await res.json()
-          setError(err.message || "Failed to fetch users")
-          return
-        }
-        const result: UsersResponse = await res.json()
-        setData(result)
-      } catch (err) {
-        setError("Unable to fetch users. Please try again.")
-      } finally {
-        setLoading(false)
+async function UsersContent() {
+  try {
+    const { cookies } = await import("next/headers")
+    const res = await fetch(
+      `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000"}/api/get-all-users`,
+      {
+        headers: {
+          Cookie: (await cookies()).toString(),
+        },
+        cache: "no-store",
       }
-    }
-    fetchUsers()
-  }, [])
-
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
-          <p className="mt-2 text-muted-foreground">Loading users...</p>
-        </div>
-      </div>
     )
-  }
 
-  if (error) {
+    if (!res.ok) {
+      throw new Error("Failed to fetch users")
+    }
+
+    const data: UsersResponse = await res.json()
+
+    return (
+      <section className="grid gap-4">
+        <header>
+          <h1 className="text-xl md:text-2xl font-semibold">All Users</h1>
+          <p className="text-sm text-muted-foreground">
+            Browse and manage all users across admins, partners, and referrals.
+          </p>
+        </header>
+
+        <div className="border border-border rounded-lg overflow-hidden">
+          <div className="px-4 py-3 border-b border-border bg-card">
+            <h2 className="font-medium">Users</h2>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead className="bg-secondary">
+                <tr className="text-left">
+                  <th className="px-4 py-2 font-medium">Email</th>
+                  <th className="px-4 py-2 font-medium">Region</th>
+                  <th className="px-4 py-2 font-medium">Subscription Status</th>
+                  <th className="px-4 py-2 font-medium">Subscription Ends At</th>
+                  <th className="px-4 py-2 font-medium">Has Paid</th>
+                  <th className="px-4 py-2 font-medium">Total Spent</th>
+                  <th className="px-4 py-2 font-medium">Converted At</th>
+                  <th className="px-4 py-2 font-medium">Created At</th>
+                  <th className="px-4 py-2 font-medium">Partner Email</th>
+                  <th className="px-4 py-2 font-medium">Partner Name</th>
+                </tr>
+              </thead>
+              <tbody>
+                {data.users.map((u) => (
+                  <tr key={u.user_id} className="border-t border-border">
+                    <td className="px-4 py-2">{u.email ?? "-"}</td>
+                    <td className="px-4 py-2">{u.region ?? "-"}</td>
+                    <td className="px-4 py-2">{u.subscription_status ?? "-"}</td>
+                    <td className="px-4 py-2">
+                      {u.subscription_ends_at ? new Date(u.subscription_ends_at).toLocaleString() : "-"}
+                    </td>
+                    <td className="px-4 py-2">{u.has_paid ? "Yes" : "No"}</td>
+                    <td className="px-4 py-2">${u.total_spent.toFixed(2)}</td>
+                    <td className="px-4 py-2">
+                      {u.converted_at ? new Date(u.converted_at).toLocaleString() : "-"}
+                    </td>
+                    <td className="px-4 py-2">
+                      {u.created_at ? new Date(u.created_at).toLocaleString() : "-"}
+                    </td>
+                    <td className="px-4 py-2">{u.partner?.email ?? "-"}</td>
+                    <td className="px-4 py-2">{u.partner?.full_name ?? "-"}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+    )
+  } catch (error) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
         <div className="w-full max-w-md border rounded-md p-4">
           <h2 className="text-red-600 font-semibold mb-2">Error</h2>
-          <p className="text-sm">{error}</p>
+          <p className="text-sm">Unable to load users. Please try again later.</p>
         </div>
       </div>
     )
   }
+}
 
-  if (!data) return null
-
+export default function AdminUsersPage() {
   return (
-    <section className="grid gap-4">
-      <header>
-        <h1 className="text-xl md:text-2xl font-semibold">All Users</h1>
-        <p className="text-sm text-muted-foreground">
-          Browse and manage all users across admins, partners, and referrals.
-        </p>
-      </header>
-
-      <div className="border border-border rounded-lg overflow-hidden">
-        <div className="px-4 py-3 border-b border-border bg-card">
-          <h2 className="font-medium">Users</h2>
-        </div>
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead className="bg-secondary">
-              <tr className="text-left">
-                <th className="px-4 py-2 font-medium">Email</th>
-                <th className="px-4 py-2 font-medium">Region</th>
-                <th className="px-4 py-2 font-medium">Subscription Status</th>
-                <th className="px-4 py-2 font-medium">Subscription Ends At</th>
-                <th className="px-4 py-2 font-medium">Has Paid</th>
-                <th className="px-4 py-2 font-medium">Total Spent</th>
-                <th className="px-4 py-2 font-medium">Converted At</th>
-                <th className="px-4 py-2 font-medium">Created At</th>
-                <th className="px-4 py-2 font-medium">Partner Email</th>
-                <th className="px-4 py-2 font-medium">Partner Name</th>
-              </tr>
-            </thead>
-            <tbody>
-              {data.users.map((u) => (
-                <tr key={u.user_id} className="border-t border-border">
-                  <td className="px-4 py-2">{u.email ?? "-"}</td>
-                  <td className="px-4 py-2">{u.region ?? "-"}</td>
-                  <td className="px-4 py-2">{u.subscription_status ?? "-"}</td>
-                  <td className="px-4 py-2">
-                    {u.subscription_ends_at ? new Date(u.subscription_ends_at).toLocaleString() : "-"}
-                  </td>
-                  <td className="px-4 py-2">{u.has_paid ? "Yes" : "No"}</td>
-                  <td className="px-4 py-2">${u.total_spent.toFixed(2)}</td>
-                  <td className="px-4 py-2">
-                    {u.converted_at ? new Date(u.converted_at).toLocaleString() : "-"}
-                  </td>
-                  <td className="px-4 py-2">
-                    {u.created_at ? new Date(u.created_at).toLocaleString() : "-"}
-                  </td>
-                  <td className="px-4 py-2">{u.partner?.email ?? "-"}</td>
-                  <td className="px-4 py-2">{u.partner?.full_name ?? "-"}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </div>
-    </section>
+    <Suspense fallback={<UsersTableSkeleton />}>
+      <UsersContent />
+    </Suspense>
   )
 }
