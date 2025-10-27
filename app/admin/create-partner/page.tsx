@@ -12,7 +12,6 @@ type PartnerFormData = {
   email: string
   full_name: string
   commission_percent: number // Integer percentage (0-100)
-  password: string
 }
 
 export default function CreatePartnerPage() {
@@ -21,31 +20,34 @@ export default function CreatePartnerPage() {
     email: "",
     full_name: "",
     commission_percent: 15,
-    password: "",
   })
   const [loading, setLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-  const [success, setSuccess] = useState<string | null>(null)
+  const [message, setMessage] = useState<string | null>(null)
+  const [messageType, setMessageType] = useState<'success' | 'error' | null>(null)
 
   const handleFormSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     // Basic client-side checks
-    if (!formData.email || !formData.full_name || !formData.password) {
-      setError("Please fill in all required fields")
+    if (!formData.email || !formData.full_name) {
+      setMessage("Please fill in all required fields")
+      setMessageType('error')
       return
     }
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(formData.email)) {
-      setError("Please enter a valid email address")
+      setMessage("Please enter a valid email address")
+      setMessageType('error')
       return
     }
     if (formData.commission_percent < 0 || formData.commission_percent > 100) {
-      setError("Commission percent must be between 0 and 100")
+      setMessage("Commission percent must be between 0 and 100")
+      setMessageType('error')
       return
     }
 
     setLoading(true)
-    setError(null)
+    setMessage(null)
+    setMessageType(null)
 
     try {
       const res = await fetch("/api/create-partner", {
@@ -58,22 +60,27 @@ export default function CreatePartnerPage() {
 
       if (!res.ok) {
         const err = await res.json()
-        setError(err.message || "Failed to create partner")
+        console.log("API Error Response:", err)
+        const errorMessage = err.error || "Failed to create partner"
+        console.log("Setting error message:", errorMessage)
+        setMessage(errorMessage)
+        setMessageType('error')
         return
       }
 
   const data = await res.json()
-  setSuccess(data.message || `Partner ${formData.full_name} created with ${formData.email}`)
+  setMessage(data.message || `Partner ${formData.full_name} created with ${formData.email}`)
+  setMessageType('success')
 
       // Reset form
       setFormData({
         email: "",
         full_name: "",
         commission_percent: 15,
-        password: "",
       })
     } catch (err) {
-      setError("Unable to create partner. Please try again.")
+      setMessage("Unable to create partner. Please try again.")
+      setMessageType('error')
     } finally {
       setLoading(false)
     }
@@ -86,15 +93,9 @@ export default function CreatePartnerPage() {
         <p className="text-muted-foreground">Add a new partner to the system</p>
       </div>
 
-      {error && (
-        <Alert variant="destructive">
-          <AlertDescription>{error}</AlertDescription>
-        </Alert>
-      )}
-
-      {success && (
-        <Alert>
-          <AlertDescription>{success}</AlertDescription>
+      {message && messageType && (
+        <Alert variant={messageType === 'error' ? 'destructive' : 'default'}>
+          <AlertDescription>{message}</AlertDescription>
         </Alert>
       )}
 
@@ -140,18 +141,6 @@ export default function CreatePartnerPage() {
                 placeholder="15"
                 value={formData.commission_percent}
                 onChange={(e) => setFormData({ ...formData, commission_percent: parseInt(e.target.value) || 0 })}
-              />
-            </div>
-
-            <div className="grid gap-2">
-              <Label htmlFor="password">Password *</Label>
-              <Input
-                id="password"
-                type="password"
-                placeholder="Enter password"
-                value={formData.password}
-                onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                required
               />
             </div>
 

@@ -60,7 +60,7 @@ export interface Partner {
   email: string | null
   full_name: string | null
   region: string | null
-  commission_rate: number
+  commission_percent: number
   total_earned: number
   total_users: number
   active_users: number
@@ -80,19 +80,33 @@ export interface PartnersResponse {
 }
 
 export interface PartnerStats {
+  partner: {
+    email: string
+    full_name: string | null
+    commission_percent: number
+    is_active: boolean
+    joined_at: string
+    total_revenue: number
+    total_converted: number
+  }
+  users: {
+    total_users: number
+    total_pending: number
+    total_active: number
+    total_expired: number
+    users_by_region?: {
+      India?: number
+      International?: number
+    }
+    recent_users_30_days: number
+    last_month_conversions: number
+    conversion_rate: number
+  }
   revenue: {
     total: number
     last_month: number
     total_payments: number
-    average_payment_amount: number
     currency: string
-  }
-  users: {
-    total_users: number
-    total_added: number
-    total_active: number
-    total_expired: number
-    recent_users_30_days: number
   }
   generated_at: string
 }
@@ -114,6 +128,34 @@ export interface PartnerUsersResponse {
   }
 }
 
+export interface CurrentPartnerReferralsResponse {
+  partner_info: {
+    email: string
+    full_name: string | null
+    commission_percent?: number
+    total_revenue?: number
+    total_converted?: number
+    is_active?: boolean
+  } | null
+  users: Array<{
+    email: string
+    region: string | null
+    subscription_status: string
+    subscription_ends_at: string | null
+    created_at: string
+    converted_at: string | null
+    total_payments?: number
+  }>
+  pagination: {
+    current_page: number
+    total_pages: number
+    total_users: number
+    per_page: number
+    has_next_page: boolean
+    has_previous_page: boolean
+  }
+}
+
 interface DashboardStore {
   // Data
   adminStats: AdminStats | null
@@ -121,6 +163,7 @@ interface DashboardStore {
   allPartners: PartnersResponse | null
   partnerStats: PartnerStats | null
   partnerUsers: PartnerUsersResponse | null
+  currentPartnerReferrals: CurrentPartnerReferralsResponse | null
 
   // Loading states
   loading: {
@@ -129,6 +172,7 @@ interface DashboardStore {
     allPartners: boolean
     partnerStats: boolean
     partnerUsers: boolean
+    currentPartnerReferrals: boolean
   }
 
   // Error states
@@ -138,6 +182,7 @@ interface DashboardStore {
     allPartners: string | null
     partnerStats: string | null
     partnerUsers: string | null
+    currentPartnerReferrals: string | null
   }
 
   // Actions
@@ -147,6 +192,7 @@ interface DashboardStore {
   loadAllPartners: () => Promise<void>
   loadPartnerStats: () => Promise<void>
   loadPartnerUsers: (partnerId: string) => Promise<void>
+  loadCurrentPartnerReferrals: () => Promise<void>
   refreshAllData: () => Promise<void>
   clearData: () => void
 }
@@ -162,6 +208,7 @@ export const useDashboardStore = create<DashboardStore>()(
       allPartners: null,
       partnerStats: null,
       partnerUsers: null,
+      currentPartnerReferrals: null,
 
       loading: {
         adminStats: false,
@@ -169,6 +216,7 @@ export const useDashboardStore = create<DashboardStore>()(
         allPartners: false,
         partnerStats: false,
         partnerUsers: false,
+        currentPartnerReferrals: false,
       },
 
       errors: {
@@ -177,6 +225,7 @@ export const useDashboardStore = create<DashboardStore>()(
         allPartners: null,
         partnerStats: null,
         partnerUsers: null,
+        currentPartnerReferrals: null,
       },
 
       // Preload all data when user logs in
@@ -186,6 +235,7 @@ export const useDashboardStore = create<DashboardStore>()(
           get().loadAllUsers(),
           get().loadAllPartners(),
           get().loadPartnerStats(),
+          get().loadCurrentPartnerReferrals(),
         ]
 
         await Promise.allSettled(promises)
@@ -341,6 +391,36 @@ export const useDashboardStore = create<DashboardStore>()(
         }
       },
 
+      // Load current partner referrals
+      loadCurrentPartnerReferrals: async () => {
+        set((state) => ({
+          loading: { ...state.loading, currentPartnerReferrals: true },
+          errors: { ...state.errors, currentPartnerReferrals: null },
+        }))
+
+        try {
+          const res = await fetch(`${API_BASE_URL}/api/get-partner-users-by-partner`, {
+            credentials: 'include',
+          })
+
+          if (!res.ok) {
+            throw new Error('Failed to fetch partner referrals')
+          }
+
+          const data: CurrentPartnerReferralsResponse = await res.json()
+
+          set((state) => ({
+            currentPartnerReferrals: data,
+            loading: { ...state.loading, currentPartnerReferrals: false },
+          }))
+        } catch (error) {
+          set((state) => ({
+            loading: { ...state.loading, currentPartnerReferrals: false },
+            errors: { ...state.errors, currentPartnerReferrals: error instanceof Error ? error.message : 'Unknown error' },
+          }))
+        }
+      },
+
       // Refresh all data
       refreshAllData: async () => {
         await get().preloadAllData()
@@ -354,12 +434,14 @@ export const useDashboardStore = create<DashboardStore>()(
           allPartners: null,
           partnerStats: null,
           partnerUsers: null,
+          currentPartnerReferrals: null,
           loading: {
             adminStats: false,
             allUsers: false,
             allPartners: false,
             partnerStats: false,
             partnerUsers: false,
+            currentPartnerReferrals: false,
           },
           errors: {
             adminStats: null,
@@ -367,6 +449,7 @@ export const useDashboardStore = create<DashboardStore>()(
             allPartners: null,
             partnerStats: null,
             partnerUsers: null,
+            currentPartnerReferrals: null,
           },
         })
       },

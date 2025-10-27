@@ -18,7 +18,7 @@ interface PartnerUsersResponse {
   partner_info: {
     email: string
     full_name: string | null
-  }
+  } | null
   users: PartnerUser[]
   pagination: {
     current_page: number
@@ -31,15 +31,15 @@ interface PartnerUsersResponse {
 }
 
 export default function PartnerUsersPage() {
-  const [partnerId, setPartnerId] = useState("")
+  const [partnerEmail, setPartnerEmail] = useState("")
   const [data, setData] = useState<PartnerUsersResponse | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState("")
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!partnerId.trim()) {
-      setError("Please enter a partner ID")
+    if (!partnerEmail.trim()) {
+      setError("Please enter a partner email")
       return
     }
 
@@ -48,7 +48,13 @@ export default function PartnerUsersPage() {
     setData(null)
 
     try {
-      const response = await fetch(`/api/get-partner-users-by-partner?partner_id=${encodeURIComponent(partnerId)}`)
+      const response = await fetch('/api/get-partner-users-by-partner', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ partner_email: partnerEmail.trim() })
+      })
 
       if (!response.ok) {
         const errorData = await response.json()
@@ -88,10 +94,10 @@ export default function PartnerUsersPage() {
       <form onSubmit={handleSubmit} className="mb-6">
         <div className="flex gap-4">
           <Input
-            type="text"
-            value={partnerId}
-            onChange={(e) => setPartnerId(e.target.value)}
-            placeholder="Enter Partner ID"
+            type="email"
+            value={partnerEmail}
+            onChange={(e) => setPartnerEmail(e.target.value)}
+            placeholder="Enter Partner Email"
             className="flex-1"
             required
           />
@@ -119,7 +125,7 @@ export default function PartnerUsersPage() {
       {data && (
         <>
           <div className="mb-4 text-sm text-muted-foreground">
-            <p>Partner: {data.partner_info.full_name || data.partner_info.email}</p>
+            <p>Partner: {data.partner_info ? (data.partner_info.full_name || data.partner_info.email) : "Viewing as Admin"}</p>
             <p>Total Users: {data.pagination.total_users}</p>
           </div>
 
@@ -144,7 +150,7 @@ export default function PartnerUsersPage() {
                     {data.users.length ? (
                       data.users.map((user) => (
                         <tr key={user.email} className="border-b last:border-0">
-                          <td className="py-2 pr-4 break-words min-w-0">{user.email}</td>
+                          <td className="py-2 pr-4 break-all min-w-0">{user.email}</td>
                           <td className="py-2 pr-4">{user.region || "—"}</td>
                           <td className="py-2 pr-4">
                             <Badge variant={getStatusBadgeVariant(user.subscription_status)}>
@@ -181,9 +187,9 @@ export default function PartnerUsersPage() {
         </>
       )}
 
-      {!data && !loading && !error && partnerId && (
+      {!data && !loading && !error && partnerEmail && (
         <div className="text-center py-8 text-gray-500">
-          Enter a partner ID and click &apos;Get Users&apos; to view partner users.
+          Enter a partner email and click &apos;Get Users&apos; to view partner users.
         </div>
       )}
     </main>

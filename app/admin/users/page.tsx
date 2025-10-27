@@ -49,11 +49,22 @@ function UsersContent() {
 
   return (
     <section className="grid gap-4">
-      <header>
-        <h1 className="text-xl md:text-2xl font-semibold">All Users</h1>
-        <p className="text-sm text-muted-foreground">
-          Browse and manage all users across admins, partners, and referrals.
-        </p>
+      <header className="flex items-center justify-between">
+        <div>
+          <h1 className="text-xl md:text-2xl font-semibold">All Users</h1>
+          <p className="text-sm text-muted-foreground">
+            Browse and manage all users across admins, partners, and referrals.
+          </p>
+        </div>
+        <Button
+          onClick={() => loadAllUsers()}
+          variant="outline"
+          size="sm"
+          className="flex items-center gap-2"
+        >
+          <RefreshCw className="w-4 h-4" />
+          Refresh Data
+        </Button>
       </header>
 
       <div className="border border-border rounded-lg overflow-hidden">

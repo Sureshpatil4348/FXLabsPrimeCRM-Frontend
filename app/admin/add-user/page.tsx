@@ -202,7 +202,7 @@ export default function AddUserPage() {
         <CardContent>
           <form onSubmit={handleFormSubmit} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="emails">Email Addresses</Label>
+              <Label htmlFor="emails">Email *</Label>
               <Textarea
                 id="emails"
                 value={formData.emails}

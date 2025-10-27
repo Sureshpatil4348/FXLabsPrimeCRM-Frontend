@@ -12,7 +12,6 @@ import { Alert, AlertDescription } from "@/components/ui/alert"
 type AdminFormData = {
   email: string
   full_name: string
-  password: string
 }
 
 export default function CreateAdminPage() {
@@ -20,52 +19,49 @@ export default function CreateAdminPage() {
   const [formData, setFormData] = useState<AdminFormData>({
     email: "",
     full_name: "",
-    password: "",
   })
   const [currentAdminPassword, setCurrentAdminPassword] = useState("")
   const [showPasswordDialog, setShowPasswordDialog] = useState(false)
   const [loading, setLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-  const [success, setSuccess] = useState<string | null>(null)
+  const [message, setMessage] = useState<string | null>(null)
+  const [messageType, setMessageType] = useState<'success' | 'error' | null>(null)
 
   const handleFormSubmit = (e: React.FormEvent) => {
     e.preventDefault()
 
     // Basic validation
-    if (!formData.email || !formData.full_name || !formData.password) {
-      setError("Please fill in all fields")
+    if (!formData.email || !formData.full_name) {
+      setMessage("Please fill in all fields")
+      setMessageType('error')
       return
     }
 
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
-      setError("Please enter a valid email address")
+      setMessage("Please enter a valid email address")
+      setMessageType('error')
       return
     }
 
-    if (formData.password.length < 6) {
-      setError("Password must be at least 6 characters long")
-      return
-    }
-
-    setError(null)
+    setMessage(null)
+    setMessageType(null)
     setShowPasswordDialog(true)
   }
 
   const handleFinalSubmit = async () => {
     if (!currentAdminPassword) {
-      setError("Please enter your current admin password")
+      setMessage("Please enter your current admin password")
+      setMessageType('error')
       return
     }
 
     setLoading(true)
-    setError(null)
-    setSuccess(null)
+    setMessage(null)
+    setMessageType(null)
 
     try {
       const requestBody = {
         email: formData.email,
         full_name: formData.full_name,
-        password: formData.password,
         current_admin_password: currentAdminPassword
       }
 
@@ -79,20 +75,23 @@ export default function CreateAdminPage() {
 
       if (!response.ok) {
         const errorData = (await response.json()) as { error?: string }
-        throw new Error(errorData.error || "Failed to create admin")
+        setMessage(errorData.error || "Failed to create admin")
+        setMessageType('error')
+        return
       }
 
       const data = await response.json()
-      setSuccess(data.message || "Admin created successfully")
+      setMessage(data.message || "Admin created successfully")
+      setMessageType('success')
       setFormData({
         email: "",
         full_name: "",
-        password: "",
       })
       setCurrentAdminPassword("")
       setShowPasswordDialog(false)
     } catch (err) {
-      setError(err instanceof Error ? err.message : "An error occurred")
+      setMessage(err instanceof Error ? err.message : "An error occurred")
+      setMessageType('error')
     } finally {
       setLoading(false)
     }
@@ -105,15 +104,9 @@ export default function CreateAdminPage() {
         <p className="text-muted-foreground">Add a new administrator to the system</p>
       </div>
 
-      {error && (
-        <Alert variant="destructive">
-          <AlertDescription>{error}</AlertDescription>
-        </Alert>
-      )}
-
-      {success && (
-        <Alert>
-          <AlertDescription>{success}</AlertDescription>
+      {message && messageType && (
+        <Alert variant={messageType === 'error' ? 'destructive' : 'default'}>
+          <AlertDescription>{message}</AlertDescription>
         </Alert>
       )}
 
@@ -125,7 +118,7 @@ export default function CreateAdminPage() {
         <CardContent>
           <form onSubmit={handleFormSubmit} className="space-y-4">
             <div className="grid gap-2">
-              <Label htmlFor="email">Email Address</Label>
+              <Label htmlFor="email">Email *</Label>
               <Input
                 id="email"
                 type="email"
@@ -137,25 +130,13 @@ export default function CreateAdminPage() {
             </div>
 
             <div className="grid gap-2">
-              <Label htmlFor="full_name">Full Name</Label>
+              <Label htmlFor="full_name">Full Name *</Label>
               <Input
                 id="full_name"
                 type="text"
                 value={formData.full_name}
                 onChange={(e) => setFormData({ ...formData, full_name: e.target.value })}
                 placeholder="John Doe"
-                required
-              />
-            </div>
-
-            <div className="grid gap-2">
-              <Label htmlFor="password">Password</Label>
-              <Input
-                id="password"
-                type="password"
-                value={formData.password}
-                onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                placeholder="Minimum 6 characters"
                 required
               />
             </div>
