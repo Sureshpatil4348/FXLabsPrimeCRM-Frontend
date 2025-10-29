@@ -36,6 +36,10 @@ export async function POST(req: Request) {
     const url =
       process.env.SUPABASE_CREATE_PARTNER_FUNCTION_URL
 
+    if (!url) {
+      return NextResponse.json({ error: "Server not configured: missing SUPABASE_CREATE_PARTNER_FUNCTION_URL" }, { status: 500 })
+    }
+
     const anon = process.env.SUPABASE_PROJECT_ANON_KEY || process.env.NEXT_PUBLIC_SUPABASE_PROJECT_ANON_KEY || ""
     if (!anon) {
       return NextResponse.json({ error: "Server not configured: missing SUPABASE_PROJECT_ANON_KEY" }, { status: 500 })
