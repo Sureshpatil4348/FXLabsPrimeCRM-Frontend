@@ -5,7 +5,26 @@ import { StatsCard } from "@/components/dashboard/stats-card"
 import { PartnerStatsPageSkeleton } from "@/components/dashboard/skeleton-stats"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
-import { RefreshCw, AlertCircle } from "lucide-react"
+import { RefreshCw, AlertCircle, Info } from "lucide-react"
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
+
+function StatsCardWithInfo({ label, value, info }: { label: string; value: string | number; info: string }) {
+  return (
+    <div className="relative">
+      <StatsCard label={label} value={value} />
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <button className="absolute top-2 right-2 p-1.5 rounded-full hover:bg-gray-200 transition-colors">
+            <Info className="w-4 h-4 text-gray-600" />
+          </button>
+        </TooltipTrigger>
+        <TooltipContent className="bg-gray-800/90 text-white border border-gray-600 max-w-sm">
+          <p>{info}</p>
+        </TooltipContent>
+      </Tooltip>
+    </div>
+  )
+}
 
 function PartnerStatsContent() {
   const { partnerStats, loading, errors, loadPartnerStats } = useDashboardStore()
@@ -68,20 +87,60 @@ function PartnerStatsContent() {
 
       {/* KPIs */}
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-        <StatsCard label="Total Users" value={partnerStats.users.total_users} />
-        <StatsCard label="Active Users" value={partnerStats.users.total_active} />
-        <StatsCard label="Pending Users" value={partnerStats.users.total_pending} />
-        <StatsCard label="Expired Users" value={partnerStats.users.total_expired} />
-        <StatsCard label="Recent Users (30d)" value={partnerStats.users.recent_users_30_days} />
-        <StatsCard label="Conversion Rate" value={`${partnerStats.users.conversion_rate}%`} />
+        <StatsCardWithInfo 
+          label="Total Users" 
+          value={partnerStats.users.total_users} 
+          info="Total number of users you have referred to the platform."
+        />
+        <StatsCardWithInfo 
+          label="Active Users" 
+          value={partnerStats.users.total_active} 
+          info="Users you referred who are currently active."
+        />
+        <StatsCardWithInfo 
+          label="Pending Users" 
+          value={partnerStats.users.total_pending} 
+          info="Users you referred who are in trial period and haven't converted to paid yet."
+        />
+        <StatsCardWithInfo 
+          label="Expired Users" 
+          value={partnerStats.users.total_expired} 
+          info="Users you referred whose subscriptions have expired."
+        />
+        <StatsCardWithInfo 
+          label="Recent Users (30d)" 
+          value={partnerStats.users.recent_users_30_days} 
+          info="Number of users you referred in the last 30 days."
+        />
+        <StatsCardWithInfo 
+          label="Conversion Rate" 
+          value={`${partnerStats.users.conversion_rate}%`} 
+          info="Percentage of your referred users who converted from trial to paid subscriptions."
+        />
       </div>
 
       {/* Revenue Stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <StatsCard label="Total Revenue" value={`$${partnerStats.revenue.total}`} />
-        <StatsCard label="Last Month Revenue" value={`$${partnerStats.revenue.last_month}`} />
-        <StatsCard label="Total Payments" value={partnerStats.revenue.total_payments} />
-        <StatsCard label="Commission Rate" value={`${partnerStats.partner.commission_percent}%`} />
+        <StatsCardWithInfo 
+          label="Total Revenue" 
+          value={`$${partnerStats.revenue.total}`} 
+          info="Total revenue generated for the company, from all your referred users who converted to paid."
+        />
+        <StatsCardWithInfo 
+          label="Last Month Revenue" 
+          value={`$${partnerStats.revenue.last_month}`} 
+          info="Revenue generated from your referred users in the last 30 days."
+        />
+        <StatsCardWithInfo 
+          label="Total Payments" 
+          value={partnerStats.revenue.total_payments} 
+          info="Total number of successful payments from your referred users."
+        />
+        <StatsCardWithInfo 
+          label="Commission Rate" 
+          value={`${partnerStats.partner.commission_percent}%`} 
+          info="Your commission percentage earned on each successful referral conversion."
+        />
       </div>
 
       {/* Additional Info */}

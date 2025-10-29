@@ -14,7 +14,7 @@ import { RefreshCw, AlertCircle } from "lucide-react"
 export default function ReferralsContentClient() {
   const { currentPartnerReferrals, loading, errors, loadCurrentPartnerReferrals } = useDashboardStore()
   const [q, setQ] = useState("")
-  const [status, setStatus] = useState<"all" | "invited" | "active" | "inactive" | "converted">("all")
+  const [status, setStatus] = useState<"all" | "trial" | "paid" | "expired">("all")
 
   const filtered = useMemo(() => {
     if (!currentPartnerReferrals) return []
@@ -29,13 +29,11 @@ export default function ReferralsContentClient() {
 
   const getStatusBadgeVariant = (status: string) => {
     switch (status) {
-      case "invited":
+      case "trial":
         return "secondary"
-      case "active":
+      case "paid":
         return "default"
-      case "converted":
-        return "default"
-      case "inactive":
+      case "expired":
         return "destructive"
       default:
         return "outline"
@@ -130,16 +128,15 @@ export default function ReferralsContentClient() {
           <CardTitle>Referrals</CardTitle>
           <div className="flex flex-wrap items-center gap-2">
             <Input placeholder="Search emails..." value={q} onChange={(e) => setQ(e.target.value)} className="w-56" />
-            <Select value={status} onValueChange={(v: "all" | "invited" | "active" | "inactive" | "converted") => setStatus(v)}>
+            <Select value={status} onValueChange={(v: "all" | "trial" | "paid" | "expired") => setStatus(v)}>
               <SelectTrigger className="w-40">
                 <SelectValue placeholder="Status" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All statuses</SelectItem>
-                <SelectItem value="invited">Invited</SelectItem>
-                <SelectItem value="active">Active</SelectItem>
-                <SelectItem value="inactive">Inactive</SelectItem>
-                <SelectItem value="converted">Converted</SelectItem>
+                <SelectItem value="trial">Trial</SelectItem>
+                <SelectItem value="paid">Paid</SelectItem>
+                <SelectItem value="expired">Expired</SelectItem>
               </SelectContent>
             </Select>
           </div>

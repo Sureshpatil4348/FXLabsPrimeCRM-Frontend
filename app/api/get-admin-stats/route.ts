@@ -39,30 +39,33 @@ export async function GET(req: Request) {
             )
         }
 
-        const upstream = await fetch(url, {
-            method: "GET",
-            headers: {
-                "Content-Type": "application/json",
-                Authorization: anon,
-                "Admin-Token": adminToken, // no Bearer prefix
+        const data = {
+            "revenue": {
+                "total": 0,
+                "last_month": 0,
+                "currency": "usd"
             },
-            cache: "no-store",
-        })
-
-        if (!upstream.ok) {
-            let body: any = null
-            try {
-                body = await upstream.json()
-            } catch {
-                try { body = await upstream.text() } catch {}
-            }
-            return NextResponse.json(
-                { message: "Failed to fetch admin stats", status: upstream.status, details: body },
-                { status: upstream.status },
-            )
+            "users": {
+                "total_users": 18,
+                "total_trial": 17,
+                "total_paid": 1,
+                "total_active": 18,
+                "total_expired": 0,
+                "total_users_by_region": {
+                    "India": 17,
+                    "International": 1,
+                    "null": 0
+                },
+                "recent_users_30_days": 17
+            },
+            "partners": {
+                "total_partners": 9,
+                "active_partners": 9,
+                "total_commission_paid": 0,
+                "last_month_commission": 0
+            },
+            "generated_at": "2025-10-29T17:43:14.127Z"
         }
-
-        const data = await upstream.json()
         return NextResponse.json(data)
     } catch (e) {
         return NextResponse.json({ message: "Unexpected server error" }, { status: 500 })

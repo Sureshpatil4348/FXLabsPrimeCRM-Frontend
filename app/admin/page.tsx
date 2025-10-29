@@ -5,7 +5,26 @@ import { StatsCard } from "@/components/dashboard/stats-card"
 import { AdminStatsPageSkeleton } from "@/components/dashboard/skeleton-stats"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
-import { RefreshCw, AlertCircle } from "lucide-react"
+import { RefreshCw, AlertCircle, Info } from "lucide-react"
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
+
+function StatsCardWithInfo({ label, value, info }: { label: string; value: string | number; info: string }) {
+  return (
+    <div className="relative">
+      <StatsCard label={label} value={value} />
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <button className="absolute top-2 right-2 p-1.5 rounded-full hover:bg-gray-200 transition-colors">
+            <Info className="w-4 h-4 text-gray-600" />
+          </button>
+        </TooltipTrigger>
+        <TooltipContent className="bg-gray-800/90 text-white border border-gray-600 max-w-sm">
+          <p>{info}</p>
+        </TooltipContent>
+      </Tooltip>
+    </div>
+  )
+}
 
 function AdminStatsContent() {
   const { adminStats, loading, errors, loadAdminStats } = useDashboardStore()
@@ -68,18 +87,61 @@ function AdminStatsContent() {
 
       {/* KPIs */}
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-        <StatsCard label="Total Users" value={adminStats.users.total_users} />
-        <StatsCard label="Total Revenue" value={`$${adminStats.revenue.total}`} />
-        <StatsCard label="MRR" value={`$${adminStats.revenue.last_month}`} />
-        <StatsCard label="Total Payments" value={adminStats.revenue.total_payments} />
-        <StatsCard label="Avg Payment" value={`$${adminStats.revenue.average_payment_amount}`} />
-        <StatsCard label="Active Users" value={adminStats.users.total_active} />
-        <StatsCard label="Expired Users" value={adminStats.users.total_expired} />
-        <StatsCard label="Recent Users (30d)" value={adminStats.users.recent_users_30_days} />
-        <StatsCard label="Total Partners" value={adminStats.partners.total_partners} />
-        <StatsCard label="Active Partners" value={adminStats.partners.active_partners} />
-        <StatsCard label="Total Commission" value={`$${adminStats.partners.total_commission_paid}`} />
-        <StatsCard label="Last Month Commission" value={`$${adminStats.partners.last_month_commission}`} />
+        <StatsCardWithInfo 
+          label="Total Users" 
+          value={adminStats.users.total_users} 
+          info="Total number of users registered across the entire platform."
+        />
+        <StatsCardWithInfo 
+          label="Total Revenue" 
+          value={`$${adminStats.revenue.total}`} 
+          info="Total revenue generated from all paid subscriptions till date."
+        />
+        <StatsCardWithInfo 
+          label="Active Users" 
+          value={adminStats.users.total_active} 
+          info="All active users of the platform, who are not expired yet."
+        />
+        <StatsCardWithInfo 
+          label="Expired Users" 
+          value={adminStats.users.total_expired} 
+          info="Users whose subscriptions have expired."
+        />
+        <StatsCardWithInfo 
+          label="Trial Users" 
+          value={adminStats.users.total_trial} 
+          info="Users currently in their trial period."
+        />
+        <StatsCardWithInfo 
+          label="Paid Users" 
+          value={adminStats.users.total_paid} 
+          info="Users with active paid subscriptions."
+        />
+        <StatsCardWithInfo 
+          label="Recent Users (30d)" 
+          value={adminStats.users.recent_users_30_days} 
+          info="Number of new users who registered in the last 30 days."
+        />
+        <StatsCardWithInfo 
+          label="Total Partners" 
+          value={adminStats.partners.total_partners} 
+          info="Total number of registered partners."
+        />
+        <StatsCardWithInfo 
+          label="Active Partners" 
+          value={adminStats.partners.active_partners} 
+          info="Partners who are currently active and earning commissions."
+        />
+        <StatsCardWithInfo 
+          label="Total Commission" 
+          value={`$${adminStats.partners.total_commission_paid}`} 
+          info="Total commission paid to all partners since the program began."
+        />
+        <StatsCardWithInfo 
+          label="Commission (30d)" 
+          value={`$${adminStats.partners.last_month_commission}`} 
+          info="Total commission paid to partners in the last 30 days."
+        />
       </div>
 
       {/* Additional Info */}
