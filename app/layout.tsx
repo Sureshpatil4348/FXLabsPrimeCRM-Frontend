@@ -8,6 +8,9 @@ export const metadata: Metadata = {
   title: 'FXLabsPrimeCRM',
   description: 'Created with v0',
   generator: 'v0.app',
+  icons: {
+    icon: '/fxlabs_favicon.png',
+  },
 }
 
 export default function RootLayout({

@@ -34,9 +34,7 @@ export async function POST(req: Request) {
     }
 
     const url =
-      process.env.SUPABASE_CREATE_PARTNER_FUNCTION_URL ||
-      process.env.SUPABASE_CREATE_PARTNER_URL ||
-      "https://kyqtnxhgokczatymraxb.supabase.co/functions/v1/create-partner"
+      process.env.SUPABASE_CREATE_PARTNER_FUNCTION_URL
 
     const anon = process.env.SUPABASE_PROJECT_ANON_KEY || process.env.NEXT_PUBLIC_SUPABASE_PROJECT_ANON_KEY || ""
     if (!anon) {
