@@ -6,45 +6,26 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select"
 import { Badge } from "@/components/ui/badge"
+import { useDashboardStore } from "@/lib/dashboard-store"
+import { Alert, AlertDescription } from "@/components/ui/alert"
+import { Button } from "@/components/ui/button"
+import { RefreshCw, AlertCircle } from "lucide-react"
 
-type PartnerUser = {
-  email: string
-  region: string | null
-  subscription_status: string
-  subscription_ends_at: string | null
-  created_at: string
-  converted_at: string | null
-}
-
-type PartnerUsersResponse = {
-  partner_info: {
-    email: string
-    full_name: string | null
-  }
-  users: PartnerUser[]
-  pagination: {
-    current_page: number
-    total_pages: number
-    total_users: number
-    per_page: number
-    has_next_page: boolean
-    has_previous_page: boolean
-  }
-}
-
-export default function ReferralsContentClient({ data }: { data: PartnerUsersResponse }) {
+export default function ReferralsContentClient() {
+  const { currentPartnerReferrals, loading, errors, loadCurrentPartnerReferrals } = useDashboardStore()
   const [q, setQ] = useState("")
   const [status, setStatus] = useState<"all" | "invited" | "active" | "inactive" | "converted">("all")
 
   const filtered = useMemo(() => {
+    if (!currentPartnerReferrals) return []
     const t = q.trim().toLowerCase()
 
-    return data.users.filter((user) => {
+    return currentPartnerReferrals.users.filter((user) => {
       const matchesSearch = !t || user.email.toLowerCase().includes(t)
       const matchesStatus = status === "all" || user.subscription_status === status
       return matchesSearch && matchesStatus
     })
-  }, [q, status, data.users])
+  }, [q, status, currentPartnerReferrals])
 
   const getStatusBadgeVariant = (status: string) => {
     switch (status) {
@@ -61,20 +42,87 @@ export default function ReferralsContentClient({ data }: { data: PartnerUsersRes
     }
   }
 
+  if (loading.currentPartnerReferrals) {
+    return (
+      <main className="p-4 md:p-6 lg:p-8">
+        <div className="mb-6 flex items-center justify-between">
+          <h1 className="text-2xl font-semibold text-pretty">My Referrals</h1>
+        </div>
+        <div className="animate-pulse space-y-4">
+          <div className="h-4 bg-gray-200 rounded w-1/4"></div>
+          <div className="h-32 bg-gray-200 rounded"></div>
+        </div>
+      </main>
+    )
+  }
+
+  if (errors.currentPartnerReferrals) {
+    return (
+      <main className="p-4 md:p-6 lg:p-8">
+        <div className="mb-6 flex items-center justify-between">
+          <div className="text-2xl font-semibold text-pretty">My Referrals</div>
+        </div>
+        <Alert className="border-red-200 bg-red-50">
+          <AlertCircle className="h-4 w-4 text-red-600" />
+          <AlertDescription className="text-red-800">
+            {errors.currentPartnerReferrals}
+            <Button
+              variant="outline"
+              size="sm"
+              className="ml-2"
+              onClick={() => loadCurrentPartnerReferrals()}
+            >
+              <RefreshCw className="w-4 h-4 mr-1" />
+              Retry
+            </Button>
+          </AlertDescription>
+        </Alert>
+      </main>
+    )
+  }
+
+  if (!currentPartnerReferrals) {
+    return (
+      <main className="p-4 md:p-6 lg:p-8">
+        <div className="mb-6 flex items-center justify-between">
+          <div className="text-2xl font-semibold text-pretty">My Referrals</div>
+        </div>
+        <div className="flex items-center justify-center h-64">
+          <div className="text-center">
+            <p className="text-gray-500 mb-4">No referral data available</p>
+            <Button onClick={() => loadCurrentPartnerReferrals()}>
+              <RefreshCw className="w-4 h-4 mr-2" />
+              Load Referrals
+            </Button>
+          </div>
+        </div>
+      </main>
+    )
+  }
+
   return (
     <main className="p-4 md:p-6 lg:p-8">
       <div className="mb-6 flex items-center justify-between">
-        <h1 className="text-2xl font-semibold text-pretty">My Referrals</h1>
+        <div>
+          <h1 className="text-2xl font-semibold text-pretty">My Referrals</h1>
+          <p className="text-sm text-muted-foreground">View and manage your referred users</p>
+        </div>
         <div className="flex gap-2">
-          <Link href="/partner/add" className="underline text-sm">
-            Add Referrals
-          </Link>
+          <Button
+            onClick={() => loadCurrentPartnerReferrals()}
+            variant="outline"
+            size="sm"
+            className="flex items-center gap-2"
+          >
+            <RefreshCw className="w-4 h-4" />
+            Refresh Data
+          </Button>
         </div>
       </div>
 
       <div className="mb-4 text-sm text-muted-foreground">
-        <p>Partner: {data.partner_info.full_name || data.partner_info.email}</p>
-        <p>Total Users: {data.pagination.total_users}</p>
+        <p>Partner: {currentPartnerReferrals.partner_info ? (currentPartnerReferrals.partner_info.full_name || currentPartnerReferrals.partner_info.email) : "Viewing as Admin"}</p>
+        <p>Total Users: {currentPartnerReferrals.pagination.total_users}</p>
       </div>
 
       <Card>
@@ -113,7 +161,7 @@ export default function ReferralsContentClient({ data }: { data: PartnerUsersRes
                 {filtered.length ? (
                   filtered.map((user) => (
                     <tr key={user.email} className="border-b last:border-0">
-                      <td className="py-2 pr-4 break-words min-w-0">{user.email}</td>
+                      <td className="py-2 pr-4 break-all min-w-0">{user.email}</td>
                       <td className="py-2 pr-4">{user.region || "—"}</td>
                       <td className="py-2 pr-4">
                         <Badge variant={getStatusBadgeVariant(user.subscription_status)}>
@@ -144,9 +192,9 @@ export default function ReferralsContentClient({ data }: { data: PartnerUsersRes
             </table>
           </div>
 
-          {data.pagination.total_pages > 1 && (
+          {currentPartnerReferrals.pagination.total_pages > 1 && (
             <div className="mt-4 text-sm text-muted-foreground text-center">
-              Page {data.pagination.current_page} of {data.pagination.total_pages} • {data.pagination.total_users} total users
+              Page {currentPartnerReferrals.pagination.current_page} of {currentPartnerReferrals.pagination.total_pages} • {currentPartnerReferrals.pagination.total_users} total users
             </div>
           )}
         </CardContent>

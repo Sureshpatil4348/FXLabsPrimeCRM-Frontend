@@ -50,9 +50,20 @@ function AdminStatsContent() {
 
   return (
     <section className="grid gap-6">
-      <header>
-        <h1 className="text-xl md:text-2xl font-semibold text-pretty">Admin Overview</h1>
-        <p className="text-sm text-muted-foreground">High-level performance across partners and referrals.</p>
+      <header className="flex items-center justify-between">
+        <div>
+          <h1 className="text-xl md:text-2xl font-semibold text-pretty">Admin Overview</h1>
+          <p className="text-sm text-muted-foreground">High-level performance across partners and referrals.</p>
+        </div>
+        <Button
+          onClick={() => loadAdminStats()}
+          variant="outline"
+          size="sm"
+          className="flex items-center gap-2"
+        >
+          <RefreshCw className="w-4 h-4" />
+          Refresh Data
+        </Button>
       </header>
 
       {/* KPIs */}
@@ -84,9 +95,11 @@ function AdminStatsContent() {
           Distribution of users across different regions.
         </p>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
-          {Object.entries(adminStats.users.total_users_by_region).map(([region, count]) => (
+          {Object.entries(adminStats.users.total_users_by_region)
+            .filter(([region]) => region !== 'null')
+            .map(([region, count]) => (
             <div key={region}>
-              <span className="font-medium">{region === 'null' ? 'Not Set' : region}:</span> {count} users
+              <span className="font-medium">{region}:</span> {count} users
             </div>
           ))}
         </div>

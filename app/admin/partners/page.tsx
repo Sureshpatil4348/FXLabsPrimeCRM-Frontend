@@ -13,7 +13,7 @@ import { useToast } from "@/hooks/use-toast"
 
 function PartnersContent() {
   const { allPartners, loading, errors, loadAllPartners } = useDashboardStore()
-  const [copiedId, setCopiedId] = useState<string | null>(null)
+  const [copiedEmail, setCopiedEmail] = useState<string | null>(null)
   const { toast } = useToast()
 
   if (loading.allPartners) {
@@ -54,19 +54,19 @@ function PartnersContent() {
     )
   }
 
-  const copyPartnerId = async (partnerId: string) => {
+  const copyPartnerEmail = async (partnerEmail: string) => {
     try {
-      await navigator.clipboard.writeText(partnerId)
-      setCopiedId(partnerId)
+      await navigator.clipboard.writeText(partnerEmail)
+      setCopiedEmail(partnerEmail)
       toast({
-        title: "Partner ID copied",
-        description: "Partner ID has been copied to clipboard",
+        title: "Partner email copied",
+        description: "Partner email has been copied to clipboard",
       })
-      setTimeout(() => setCopiedId(null), 2000)
+      setTimeout(() => setCopiedEmail(null), 2000)
     } catch (err) {
       toast({
         title: "Failed to copy",
-        description: "Could not copy partner ID to clipboard",
+        description: "Could not copy partner email to clipboard",
         variant: "destructive",
       })
     }
@@ -83,6 +83,24 @@ function PartnersContent() {
 
   return (
     <div className="space-y-6">
+      <header className="flex items-center justify-between">
+        <div>
+          <h1 className="text-xl md:text-2xl font-semibold">Partners</h1>
+          <p className="text-sm text-muted-foreground">
+            Manage and monitor all partners in the system.
+          </p>
+        </div>
+        <Button
+          onClick={() => loadAllPartners()}
+          variant="outline"
+          size="sm"
+          className="flex items-center gap-2"
+        >
+          <RefreshCw className="w-4 h-4" />
+          Refresh Data
+        </Button>
+      </header>
+
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -129,7 +147,7 @@ function PartnersContent() {
               <TableRow>
                 <TableHead>Name</TableHead>
                 <TableHead>Email</TableHead>
-                <TableHead>Commission</TableHead>
+                <TableHead>Commission %</TableHead>
                 <TableHead>Total Revenue</TableHead>
                 <TableHead>Total Added</TableHead>
                 <TableHead>Total Converted</TableHead>
@@ -142,7 +160,7 @@ function PartnersContent() {
                 <TableRow key={partner.partner_id}>
                   <TableCell className="font-medium">{partner.full_name || "-"}</TableCell>
                   <TableCell>{partner.email}</TableCell>
-                  <TableCell>{partner.commission_rate}%</TableCell>
+                  <TableCell>{partner.commission_percent}%</TableCell>
                   <TableCell>{currency(partner.total_earned || 0)}</TableCell>
                   <TableCell>{partner.total_users || 0}</TableCell>
                   <TableCell>{partner.active_users || 0}</TableCell>
@@ -151,15 +169,16 @@ function PartnersContent() {
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={() => copyPartnerId(partner.partner_id)}
+                      onClick={() => partner.email && copyPartnerEmail(partner.email)}
+                      disabled={!partner.email}
                       className="flex items-center gap-2 cursor-pointer"
                     >
-                      {copiedId === partner.partner_id ? (
+                      {copiedEmail === partner.email ? (
                         <Check className="h-4 w-4 text-green-600" />
                       ) : (
                         <Copy className="h-4 w-4" />
                       )}
-                      {copiedId === partner.partner_id ? "Copied!" : "Copy ID"}
+                      {copiedEmail === partner.email ? "Copied!" : "Copy Email"}
                     </Button>
                   </TableCell>
                 </TableRow>

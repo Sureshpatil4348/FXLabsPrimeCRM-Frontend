@@ -2,14 +2,17 @@ import { NextResponse } from "next/server"
 import { cookies } from "next/headers"
 import { validateCsrfProtection } from "@/lib/csrf"
 
-// GET /api/get-partner-users-by-partner
-// Headers sent upstream:
-// - Authorization: <SUPABASE_PROJECT_ANON_KEY> (no Bearer)
-// - Partner-Token: <partner token from cookie or header> (no Bearer)
-// - Admin-Token: <admin token from cookie or header> (no Bearer) - for admin access
-// Query params (for admin access):
-// - partner_id: <partner id to get users for>
+// GET /api/get-partner-users-by-partner (for partners - no body)
+// POST /api/get-partner-users-by-partner (for admins - with JSON body {"partner_email": "email"})
 export async function GET(req: Request) {
+    return handleRequest(req, 'GET')
+}
+
+export async function POST(req: Request) {
+    return handleRequest(req, 'POST')
+}
+
+async function handleRequest(req: Request, method: 'GET' | 'POST') {
     try {
         // CSRF protection
         const csrfError = validateCsrfProtection(req)
@@ -39,9 +42,19 @@ export async function GET(req: Request) {
         const headerPartner = req.headers.get("Partner-Token") || req.headers.get("x-partner-token")
         const partnerToken = cookiePartner || headerPartner || ""
 
-        // Parse query parameters for admin access
-        const { searchParams } = new URL(req.url)
-        const partnerId = searchParams.get("partner_id")
+        // Parse request body for POST requests (admin access)
+        let partnerEmail = null
+        if (method === 'POST') {
+            try {
+                const body = await req.json()
+                partnerEmail = body.partner_email
+            } catch (e) {
+                return NextResponse.json(
+                    { message: "Invalid JSON body for POST request" },
+                    { status: 400 },
+                )
+            }
+        }
 
         // Authorization logic
         let token = ""
@@ -62,10 +75,10 @@ export async function GET(req: Request) {
             )
         }
 
-        // Build upstream URL with partner_id if provided (admin access)
+        // Build upstream URL with partner_email if provided (admin POST access)
         let upstreamUrl = url
-        if (partnerId && adminToken) {
-            upstreamUrl += `?partner_id=${encodeURIComponent(partnerId)}`
+        if (partnerEmail && adminToken && method === 'POST') {
+            upstreamUrl += `?partner_email=${encodeURIComponent(partnerEmail)}`
         }
 
         const upstream = await fetch(upstreamUrl, {
