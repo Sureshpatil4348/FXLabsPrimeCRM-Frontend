@@ -5,13 +5,12 @@ export interface AdminStats {
   revenue: {
     total: number
     last_month: number
-    total_payments: number
-    average_payment_amount: number
     currency: string
   }
   users: {
     total_users: number
-    total_added: number
+    total_trial: number
+    total_paid: number
     total_active: number
     total_expired: number
     total_users_by_region: Record<string, number>

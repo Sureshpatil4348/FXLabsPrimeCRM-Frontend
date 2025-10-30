@@ -72,13 +72,11 @@ export default function PartnerUsersPage() {
 
   const getStatusBadgeVariant = (status: string) => {
     switch (status) {
-      case "invited":
+      case "trial":
         return "secondary"
-      case "active":
+      case "paid":
         return "default"
-      case "converted":
-        return "default"
-      case "inactive":
+      case "expired":
         return "destructive"
       default:
         return "outline"
