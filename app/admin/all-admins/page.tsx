@@ -16,15 +16,25 @@ function AdminsContent() {
   const { allAdmins, loading, errors, loadAllAdmins } = useDashboardStore()
   const [copiedEmail, setCopiedEmail] = useState<string | null>(null)
   const [currentPage, setCurrentPage] = useState(1)
+  const [paginationLoading, setPaginationLoading] = useState(false)
   const { toast } = useToast()
 
   useEffect(() => {
-    loadAllAdmins({ page: currentPage, limit: PAGINATION_LIMIT })
+    // Always load data with pagination on mount or when page changes
+    const loadData = async () => {
+      setPaginationLoading(true)
+      try {
+        await loadAllAdmins({ page: currentPage, limit: PAGINATION_LIMIT })
+      } finally {
+        setPaginationLoading(false)
+      }
+    }
+    loadData()
   }, [currentPage]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const handlePageChange = (page: number) => {
     // Block pagination while loading to prevent race conditions
-    if (loading.allAdmins) return
+    if (paginationLoading) return
     
     // Clamp page between valid bounds to prevent 400 errors from invalid pages
     if (!allAdmins) return
@@ -37,7 +47,8 @@ function AdminsContent() {
     }
   }
 
-  if (loading.allAdmins) {
+  // Only show skeleton on initial load, not on pagination
+  if (loading.allAdmins && !allAdmins) {
     return <PartnersTableSkeleton />
   }
 
@@ -122,16 +133,7 @@ function AdminsContent() {
         </Button>
       </header>
 
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Admins</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{totalAdmins}</div>
-          </CardContent>
-        </Card>
-      </div>
+      
 
       <Card>
         <CardHeader>
@@ -186,7 +188,7 @@ function AdminsContent() {
                   variant="outline"
                   size="sm"
                   onClick={() => handlePageChange(currentPage - 1)}
-                  disabled={loading.allAdmins || !allAdmins.pagination.has_prev}
+                  disabled={paginationLoading || !allAdmins.pagination.has_prev}
                 >
                   <ChevronLeft className="w-4 h-4 mr-1" />
                   Previous
@@ -198,7 +200,7 @@ function AdminsContent() {
                   variant="outline"
                   size="sm"
                   onClick={() => handlePageChange(currentPage + 1)}
-                  disabled={loading.allAdmins || !allAdmins.pagination.has_next}
+                  disabled={paginationLoading || !allAdmins.pagination.has_next}
                 >
                   Next
                   <ChevronRight className="w-4 h-4 ml-1" />
