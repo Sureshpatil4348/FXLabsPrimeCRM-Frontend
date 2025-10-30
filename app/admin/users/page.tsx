@@ -6,18 +6,28 @@ import { UsersTableSkeleton } from "@/components/dashboard/skeleton-table"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
 import { RefreshCw, AlertCircle, ChevronLeft, ChevronRight } from "lucide-react"
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 
 function UsersContent() {
   const { allUsers, loading, errors, loadAllUsers } = useDashboardStore()
   const [currentPage, setCurrentPage] = useState(1)
-
   useEffect(() => {
     loadAllUsers({ page: currentPage, limit: PAGINATION_LIMIT })
   }, [currentPage]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const handlePageChange = (page: number) => {
-    setCurrentPage(page)
+    // Block pagination while loading to prevent race conditions
+    if (loading.allUsers) return
+    
+    // Clamp page between valid bounds to prevent 400 errors from invalid pages
+    if (!allUsers) return
+    const { total_pages } = allUsers.pagination
+    const clamped = Math.min(Math.max(page, 1), Math.max(total_pages, 1))
+    
+    // Only update if the clamped page differs from current page
+    if (clamped !== currentPage) {
+      setCurrentPage(clamped)
+    }
   }
 
   if (loading.allUsers) {
@@ -135,7 +145,7 @@ function UsersContent() {
               variant="outline"
               size="sm"
               onClick={() => handlePageChange(currentPage - 1)}
-              disabled={!allUsers.pagination.has_previous_page}
+              disabled={loading.allUsers || !allUsers.pagination.has_previous_page}
             >
               <ChevronLeft className="w-4 h-4 mr-1" />
               Previous
@@ -147,7 +157,7 @@ function UsersContent() {
               variant="outline"
               size="sm"
               onClick={() => handlePageChange(currentPage + 1)}
-              disabled={!allUsers.pagination.has_next_page}
+              disabled={loading.allUsers || !allUsers.pagination.has_next_page}
             >
               Next
               <ChevronRight className="w-4 h-4 ml-1" />

@@ -79,11 +79,18 @@ export default function PartnerUsersPage() {
   const handlePageChange = async (page: number) => {
     if (!partnerEmail.trim() || !data) return
 
+    // Clamp page between valid bounds to prevent 400 errors from invalid pages
+    const { total_pages } = data.pagination
+    const clamped = Math.min(Math.max(page, 1), Math.max(total_pages, 1))
+    
+    // Only update if the clamped page differs from current page
+    if (clamped === currentPage) return
+
     setPaginationLoading(true)
     setError("")
 
     try {
-      const response = await fetch(`/api/get-partner-users-by-partner?page=${page}&limit=${PAGINATION_LIMIT}`, {
+      const response = await fetch(`/api/get-partner-users-by-partner?page=${clamped}&limit=${PAGINATION_LIMIT}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -98,7 +105,7 @@ export default function PartnerUsersPage() {
 
       const result: PartnerUsersResponse = await response.json()
       setData(result)
-      setCurrentPage(page)
+      setCurrentPage(clamped)
     } catch (err) {
       setError(err instanceof Error ? err.message : "An error occurred")
     } finally {

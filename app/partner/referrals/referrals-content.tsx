@@ -23,7 +23,15 @@ export default function ReferralsContentClient() {
   }, [currentPage]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const handlePageChange = (page: number) => {
-    setCurrentPage(page)
+    // Clamp page between valid bounds to prevent 400 errors from invalid pages
+    if (!currentPartnerReferrals) return
+    const { total_pages } = currentPartnerReferrals.pagination
+    const clamped = Math.min(Math.max(page, 1), Math.max(total_pages, 1))
+    
+    // Only update if the clamped page differs from current page
+    if (clamped !== currentPage) {
+      setCurrentPage(clamped)
+    }
   }
 
   const filtered = useMemo(() => {

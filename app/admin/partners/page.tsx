@@ -23,7 +23,18 @@ function PartnersContent() {
   }, [currentPage]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const handlePageChange = (page: number) => {
-    setCurrentPage(page)
+    // Block pagination while loading to prevent race conditions
+    if (loading.allPartners) return
+    
+    // Clamp page between valid bounds to prevent 400 errors from invalid pages
+    if (!allPartners) return
+    const { total_pages } = allPartners.pagination
+    const clamped = Math.min(Math.max(page, 1), Math.max(total_pages, 1))
+    
+    // Only update if the clamped page differs from current page
+    if (clamped !== currentPage) {
+      setCurrentPage(clamped)
+    }
   }
 
   if (loading.allPartners) {

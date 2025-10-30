@@ -23,7 +23,18 @@ function AdminsContent() {
   }, [currentPage]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const handlePageChange = (page: number) => {
-    setCurrentPage(page)
+    // Block pagination while loading to prevent race conditions
+    if (loading.allAdmins) return
+    
+    // Clamp page between valid bounds to prevent 400 errors from invalid pages
+    if (!allAdmins) return
+    const { total_pages } = allAdmins.pagination
+    const clamped = Math.min(Math.max(page, 1), Math.max(total_pages, 1))
+    
+    // Only update if the clamped page differs from current page
+    if (clamped !== currentPage) {
+      setCurrentPage(clamped)
+    }
   }
 
   if (loading.allAdmins) {
@@ -86,7 +97,7 @@ function AdminsContent() {
   }
 
   // Calculate statistics from the admins data
-  const totalAdmins = allAdmins.admins.length
+  const totalAdmins = allAdmins.pagination.total
 
   return (
     <div className="space-y-6">
@@ -175,7 +186,7 @@ function AdminsContent() {
                   variant="outline"
                   size="sm"
                   onClick={() => handlePageChange(currentPage - 1)}
-                  disabled={!allAdmins.pagination.has_prev}
+                  disabled={loading.allAdmins || !allAdmins.pagination.has_prev}
                 >
                   <ChevronLeft className="w-4 h-4 mr-1" />
                   Previous
@@ -187,7 +198,7 @@ function AdminsContent() {
                   variant="outline"
                   size="sm"
                   onClick={() => handlePageChange(currentPage + 1)}
-                  disabled={!allAdmins.pagination.has_next}
+                  disabled={loading.allAdmins || !allAdmins.pagination.has_next}
                 >
                   Next
                   <ChevronRight className="w-4 h-4 ml-1" />

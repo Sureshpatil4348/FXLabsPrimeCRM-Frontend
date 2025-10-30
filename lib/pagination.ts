@@ -3,13 +3,14 @@
  * Uses environment variables to configure pagination behavior
  */
 
-export const PAGINATION_LIMIT = parseInt(
-  process.env.NEXT_PUBLIC_PAGINATION_LIMIT || '20',
-  10
-)
+const resolvePaginationLimit = () => {
+  const parsed = parseInt(process.env.NEXT_PUBLIC_PAGINATION_LIMIT || '20', 10)
+  return Number.isNaN(parsed) || parsed < 1 ? 20 : parsed
+}
+
+export const PAGINATION_LIMIT = resolvePaginationLimit()
 
 // Fallback to 20 if invalid value is provided
 export const getPaginationLimit = (): number => {
-  const limit = parseInt(process.env.NEXT_PUBLIC_PAGINATION_LIMIT || '20', 10)
-  return isNaN(limit) || limit < 1 ? 20 : limit
+  return resolvePaginationLimit()
 }
