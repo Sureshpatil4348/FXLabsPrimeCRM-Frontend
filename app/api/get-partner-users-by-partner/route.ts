@@ -76,12 +76,25 @@ async function handleRequest(req: Request, method: 'GET' | 'POST') {
         }
 
         // Build upstream URL with partner_email if provided (admin POST access)
-        let upstreamUrl = url
+        let upstreamUrl = new URL(url)
+        
         if (partnerEmail && adminToken && method === 'POST') {
-            upstreamUrl += `?partner_email=${encodeURIComponent(partnerEmail)}`
+            upstreamUrl.searchParams.set('partner_email', partnerEmail)
         }
 
-        const upstream = await fetch(upstreamUrl, {
+        // Forward pagination parameters from GET/POST requests
+        const requestUrl = new URL(req.url)
+        const page = requestUrl.searchParams.get('page')
+        const limit = requestUrl.searchParams.get('limit')
+        
+        if (page !== null) {
+            upstreamUrl.searchParams.set('page', page)
+        }
+        if (limit !== null) {
+            upstreamUrl.searchParams.set('limit', limit)
+        }
+
+        const upstream = await fetch(upstreamUrl.toString(), {
             method: "GET",
             headers: {
                 "Content-Type": "application/json",

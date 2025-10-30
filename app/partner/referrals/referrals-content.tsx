@@ -1,20 +1,30 @@
 "use client"
 
-import { useMemo, useState } from "react"
+import { useMemo, useState, useEffect } from "react"
 import Link from "next/link"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select"
 import { Badge } from "@/components/ui/badge"
 import { useDashboardStore } from "@/lib/dashboard-store"
+import { PAGINATION_LIMIT } from "@/lib/pagination"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
-import { RefreshCw, AlertCircle } from "lucide-react"
+import { RefreshCw, AlertCircle, ChevronLeft, ChevronRight } from "lucide-react"
 
 export default function ReferralsContentClient() {
   const { currentPartnerReferrals, loading, errors, loadCurrentPartnerReferrals } = useDashboardStore()
   const [q, setQ] = useState("")
   const [status, setStatus] = useState<"all" | "trial" | "paid" | "expired">("all")
+  const [currentPage, setCurrentPage] = useState(1)
+
+  useEffect(() => {
+    loadCurrentPartnerReferrals({ page: currentPage, limit: PAGINATION_LIMIT })
+  }, [currentPage]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page)
+  }
 
   const filtered = useMemo(() => {
     if (!currentPartnerReferrals) return []
@@ -68,7 +78,10 @@ export default function ReferralsContentClient() {
               variant="outline"
               size="sm"
               className="ml-2"
-              onClick={() => loadCurrentPartnerReferrals()}
+              onClick={() => {
+                setCurrentPage(1)
+                loadCurrentPartnerReferrals({ page: 1, limit: PAGINATION_LIMIT })
+              }}
             >
               <RefreshCw className="w-4 h-4 mr-1" />
               Retry
@@ -88,7 +101,7 @@ export default function ReferralsContentClient() {
         <div className="flex items-center justify-center h-64">
           <div className="text-center">
             <p className="text-gray-500 mb-4">No referral data available</p>
-            <Button onClick={() => loadCurrentPartnerReferrals()}>
+            <Button onClick={() => loadCurrentPartnerReferrals({ page: 1, limit: PAGINATION_LIMIT })}>
               <RefreshCw className="w-4 h-4 mr-2" />
               Load Referrals
             </Button>
@@ -107,7 +120,10 @@ export default function ReferralsContentClient() {
         </div>
         <div className="flex gap-2">
           <Button
-            onClick={() => loadCurrentPartnerReferrals()}
+            onClick={() => {
+              setCurrentPage(1)
+              loadCurrentPartnerReferrals({ page: 1, limit: PAGINATION_LIMIT })
+            }}
             variant="outline"
             size="sm"
             className="flex items-center gap-2"
@@ -189,9 +205,36 @@ export default function ReferralsContentClient() {
             </table>
           </div>
 
-          {currentPartnerReferrals.pagination.total_pages > 1 && (
-            <div className="mt-4 text-sm text-muted-foreground text-center">
-              Page {currentPartnerReferrals.pagination.current_page} of {currentPartnerReferrals.pagination.total_pages} • {currentPartnerReferrals.pagination.total_users} total users
+          {/* Pagination */}
+          {/* Pagination */}
+          {currentPartnerReferrals && currentPartnerReferrals.pagination.total_pages > 1 && (
+            <div className="flex items-center justify-between px-4 py-3 border-t border-border bg-card mt-4">
+              <div className="text-sm text-muted-foreground">
+                Showing {filtered.length} of {currentPartnerReferrals.pagination.total_users} referrals
+              </div>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handlePageChange(currentPage - 1)}
+                  disabled={!currentPartnerReferrals.pagination.has_previous_page}
+                >
+                  <ChevronLeft className="w-4 h-4 mr-1" />
+                  Previous
+                </Button>
+                <span className="text-sm">
+                  Page {currentPartnerReferrals.pagination.current_page} of {currentPartnerReferrals.pagination.total_pages}
+                </span>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handlePageChange(currentPage + 1)}
+                  disabled={!currentPartnerReferrals.pagination.has_next_page}
+                >
+                  Next
+                  <ChevronRight className="w-4 h-4 ml-1" />
+                </Button>
+              </div>
             </div>
           )}
         </CardContent>

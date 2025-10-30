@@ -4,6 +4,9 @@ import { useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
+import { ChevronLeft, ChevronRight } from "lucide-react"
+import { PAGINATION_LIMIT } from "@/lib/pagination"
 
 interface PartnerUser {
   email: string
@@ -34,7 +37,9 @@ export default function PartnerUsersPage() {
   const [partnerEmail, setPartnerEmail] = useState("")
   const [data, setData] = useState<PartnerUsersResponse | null>(null)
   const [loading, setLoading] = useState(false)
+  const [paginationLoading, setPaginationLoading] = useState(false)
   const [error, setError] = useState("")
+  const [currentPage, setCurrentPage] = useState(1)
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -46,9 +51,10 @@ export default function PartnerUsersPage() {
     setLoading(true)
     setError("")
     setData(null)
+    setCurrentPage(1)
 
     try {
-      const response = await fetch('/api/get-partner-users-by-partner', {
+      const response = await fetch(`/api/get-partner-users-by-partner?page=1&limit=${PAGINATION_LIMIT}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -67,6 +73,36 @@ export default function PartnerUsersPage() {
       setError(err instanceof Error ? err.message : "An error occurred")
     } finally {
       setLoading(false)
+    }
+  }
+
+  const handlePageChange = async (page: number) => {
+    if (!partnerEmail.trim() || !data) return
+
+    setPaginationLoading(true)
+    setError("")
+
+    try {
+      const response = await fetch(`/api/get-partner-users-by-partner?page=${page}&limit=${PAGINATION_LIMIT}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ partner_email: partnerEmail.trim() })
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.message || "Failed to fetch partner users")
+      }
+
+      const result: PartnerUsersResponse = await response.json()
+      setData(result)
+      setCurrentPage(page)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "An error occurred")
+    } finally {
+      setPaginationLoading(false)
     }
   }
 
@@ -176,8 +212,33 @@ export default function PartnerUsersPage() {
               </div>
 
               {data.pagination.total_pages > 1 && (
-                <div className="mt-4 text-sm text-muted-foreground text-center">
-                  Page {data.pagination.current_page} of {data.pagination.total_pages} • {data.pagination.total_users} total users
+                <div className="flex items-center justify-between px-4 py-3 border-t border-border bg-card mt-4">
+                  <div className="text-sm text-muted-foreground">
+                    Showing {data.users.length} of {data.pagination.total_users} users
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handlePageChange(currentPage - 1)}
+                      disabled={!data.pagination.has_previous_page || paginationLoading}
+                    >
+                      <ChevronLeft className="w-4 h-4 mr-1" />
+                      Previous
+                    </Button>
+                    <span className="text-sm">
+                      Page {data.pagination.current_page} of {data.pagination.total_pages}
+                    </span>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handlePageChange(currentPage + 1)}
+                      disabled={!data.pagination.has_next_page || paginationLoading}
+                    >
+                      Next
+                      <ChevronRight className="w-4 h-4 ml-1" />
+                    </Button>
+                  </div>
                 </div>
               )}
             </CardContent>

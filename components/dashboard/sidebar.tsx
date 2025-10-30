@@ -16,11 +16,16 @@ export function Sidebar({ role, open, onClose }: SidebarProps) {
 
   const adminItems = [
     { href: "/admin", label: "Dashboard", icon: BarChart3 },
-    { href: "/admin/partners", label: "Partners", icon: Building2 },
-    { href: "/admin/create-partner", label: "Create Partner", icon: UserPlus },
-    { href: "/admin/create-admin", label: "Create Admin", icon: Shield },
-    { href: "/admin/add-user", label: "Add User", icon: UserPlus },
     { href: "/admin/users", label: "All Users", icon: Users },
+    
+    { href: "/admin/partners", label: "All Partners", icon: Users },
+    { href: "/admin/all-admins", label: "All Admins", icon: Building2 },
+    { href: "/admin/add-user", label: "Create User", icon: UserPlus },
+    
+    
+    { href: "/admin/create-partner", label: "Create Partner", icon: UserPlus },
+    
+    { href: "/admin/create-admin", label: "Create Admin", icon: Shield },
     { href: "/admin/partner-users", label: "Get Users by Partner", icon: UserCheck },
   ]
 

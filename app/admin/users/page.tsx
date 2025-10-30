@@ -1,13 +1,24 @@
 "use client"
 
 import { useDashboardStore } from "@/lib/dashboard-store"
+import { PAGINATION_LIMIT } from "@/lib/pagination"
 import { UsersTableSkeleton } from "@/components/dashboard/skeleton-table"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
-import { RefreshCw, AlertCircle } from "lucide-react"
+import { RefreshCw, AlertCircle, ChevronLeft, ChevronRight } from "lucide-react"
+import { useState, useEffect } from "react"
 
 function UsersContent() {
   const { allUsers, loading, errors, loadAllUsers } = useDashboardStore()
+  const [currentPage, setCurrentPage] = useState(1)
+
+  useEffect(() => {
+    loadAllUsers({ page: currentPage, limit: PAGINATION_LIMIT })
+  }, [currentPage]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page)
+  }
 
   if (loading.allUsers) {
     return <UsersTableSkeleton />
@@ -23,7 +34,7 @@ function UsersContent() {
             variant="outline"
             size="sm"
             className="ml-2"
-            onClick={() => loadAllUsers()}
+            onClick={() => loadAllUsers({ page: currentPage, limit: PAGINATION_LIMIT })}
           >
             <RefreshCw className="w-4 h-4 mr-1" />
             Retry
@@ -38,7 +49,7 @@ function UsersContent() {
       <div className="flex items-center justify-center h-64">
         <div className="text-center">
           <p className="text-gray-500 mb-4">No user data available</p>
-          <Button onClick={() => loadAllUsers()}>
+          <Button onClick={() => loadAllUsers({ page: 1, limit: PAGINATION_LIMIT })}>
             <RefreshCw className="w-4 h-4 mr-2" />
             Load Users
           </Button>
@@ -57,7 +68,7 @@ function UsersContent() {
           </p>
         </div>
         <Button
-          onClick={() => loadAllUsers()}
+          onClick={() => loadAllUsers({ page: currentPage, limit: PAGINATION_LIMIT })}
           variant="outline"
           size="sm"
           className="flex items-center gap-2"
@@ -112,6 +123,38 @@ function UsersContent() {
           </table>
         </div>
       </div>
+
+      {/* Pagination */}
+      {allUsers && allUsers.pagination.total_pages > 1 && (
+        <div className="flex items-center justify-between px-4 py-3 border-t border-border bg-card">
+          <div className="text-sm text-muted-foreground">
+            Showing {allUsers.users.length} of {allUsers.pagination.total_users} users
+          </div>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => handlePageChange(currentPage - 1)}
+              disabled={!allUsers.pagination.has_previous_page}
+            >
+              <ChevronLeft className="w-4 h-4 mr-1" />
+              Previous
+            </Button>
+            <span className="text-sm">
+              Page {allUsers.pagination.current_page} of {allUsers.pagination.total_pages}
+            </span>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => handlePageChange(currentPage + 1)}
+              disabled={!allUsers.pagination.has_next_page}
+            >
+              Next
+              <ChevronRight className="w-4 h-4 ml-1" />
+            </Button>
+          </div>
+        </div>
+      )}
     </section>
   )
 }
