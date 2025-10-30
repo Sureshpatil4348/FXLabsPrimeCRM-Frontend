@@ -87,15 +87,11 @@ function AdminStatsContent() {
 
       {/* KPIs */}
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+        {/* User Cards */}
         <StatsCardWithInfo 
           label="Total Users" 
           value={adminStats.users.total_users} 
           info="Total number of users registered across the entire platform."
-        />
-        <StatsCardWithInfo 
-          label="Total Revenue" 
-          value={`$${adminStats.revenue.total}`} 
-          info="Total revenue generated from all paid subscriptions till date."
         />
         <StatsCardWithInfo 
           label="Active Users" 
@@ -122,15 +118,17 @@ function AdminStatsContent() {
           value={adminStats.users.recent_users_30_days} 
           info="Number of new users who registered in the last 30 days."
         />
+        
+        {/* Revenue & Commission Cards */}
         <StatsCardWithInfo 
-          label="Total Partners" 
-          value={adminStats.partners.total_partners} 
-          info="Total number of registered partners."
+          label="Total Revenue" 
+          value={`$${adminStats.revenue.total}`} 
+          info="Total revenue generated from all paid subscriptions till date."
         />
         <StatsCardWithInfo 
-          label="Active Partners" 
-          value={adminStats.partners.active_partners} 
-          info="Partners who are currently active and earning commissions."
+          label="Revenue (30d)" 
+          value={`$${adminStats.revenue.last_month}`} 
+          info="Total revenue generated in the last 30 days."
         />
         <StatsCardWithInfo 
           label="Total Commission" 
@@ -141,6 +139,18 @@ function AdminStatsContent() {
           label="Commission (30d)" 
           value={`$${adminStats.partners.last_month_commission}`} 
           info="Total commission paid to partners in the last 30 days."
+        />
+        
+        {/* Partner Cards */}
+        <StatsCardWithInfo 
+          label="Total Partners" 
+          value={adminStats.partners.total_partners} 
+          info="Total number of registered partners."
+        />
+        <StatsCardWithInfo 
+          label="Active Partners" 
+          value={adminStats.partners.active_partners} 
+          info="Partners who are currently active and earning commissions."
         />
       </div>
 

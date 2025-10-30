@@ -58,23 +58,46 @@ export interface Partner {
   partner_id: string
   email: string | null
   full_name: string | null
-  region: string | null
   commission_percent: number
-  total_earned: number
-  total_users: number
-  active_users: number
+  total_revenue: number
+  total_added: number
+  total_converted: number
   created_at: string | null
 }
 
 export interface PartnersResponse {
   partners: Partner[]
   pagination: {
-    current_page: number
+    page: number
+    page_size: number
+    total: number
     total_pages: number
-    total_partners: number
-    per_page: number
-    has_next_page: boolean
-    has_previous_page: boolean
+    has_next: boolean
+    has_prev: boolean
+  }
+  filters: {
+    sort_by: string
+  }
+}
+
+export interface Admin {
+  email: string
+  full_name: string | null
+  created_at: string
+}
+
+export interface AdminsResponse {
+  admins: Admin[]
+  pagination: {
+    page: number
+    page_size: number
+    total: number
+    total_pages: number
+    has_next: boolean
+    has_prev: boolean
+  }
+  filters: {
+    sort_by: string
   }
 }
 
@@ -160,6 +183,7 @@ interface DashboardStore {
   adminStats: AdminStats | null
   allUsers: UsersResponse | null
   allPartners: PartnersResponse | null
+  allAdmins: AdminsResponse | null
   partnerStats: PartnerStats | null
   partnerUsers: PartnerUsersResponse | null
   currentPartnerReferrals: CurrentPartnerReferralsResponse | null
@@ -169,6 +193,7 @@ interface DashboardStore {
     adminStats: boolean
     allUsers: boolean
     allPartners: boolean
+    allAdmins: boolean
     partnerStats: boolean
     partnerUsers: boolean
     currentPartnerReferrals: boolean
@@ -179,6 +204,7 @@ interface DashboardStore {
     adminStats: string | null
     allUsers: string | null
     allPartners: string | null
+    allAdmins: string | null
     partnerStats: string | null
     partnerUsers: string | null
     currentPartnerReferrals: string | null
@@ -187,11 +213,12 @@ interface DashboardStore {
   // Actions
   preloadAllData: () => Promise<void>
   loadAdminStats: () => Promise<void>
-  loadAllUsers: () => Promise<void>
-  loadAllPartners: () => Promise<void>
+  loadAllUsers: (params?: { page?: number; limit?: number; status?: string; region?: string }) => Promise<void>
+  loadAllPartners: (params?: { page?: number; limit?: number }) => Promise<void>
+  loadAllAdmins: (params?: { page?: number; limit?: number }) => Promise<void>
   loadPartnerStats: () => Promise<void>
-  loadPartnerUsers: (partnerId: string) => Promise<void>
-  loadCurrentPartnerReferrals: () => Promise<void>
+  loadPartnerUsers: (partnerId: string, params?: { page?: number; limit?: number }) => Promise<void>
+  loadCurrentPartnerReferrals: (params?: { page?: number; limit?: number }) => Promise<void>
   refreshAllData: () => Promise<void>
   clearData: () => void
 }
@@ -205,6 +232,7 @@ export const useDashboardStore = create<DashboardStore>()(
       adminStats: null,
       allUsers: null,
       allPartners: null,
+      allAdmins: null,
       partnerStats: null,
       partnerUsers: null,
       currentPartnerReferrals: null,
@@ -213,6 +241,7 @@ export const useDashboardStore = create<DashboardStore>()(
         adminStats: false,
         allUsers: false,
         allPartners: false,
+        allAdmins: false,
         partnerStats: false,
         partnerUsers: false,
         currentPartnerReferrals: false,
@@ -222,6 +251,7 @@ export const useDashboardStore = create<DashboardStore>()(
         adminStats: null,
         allUsers: null,
         allPartners: null,
+        allAdmins: null,
         partnerStats: null,
         partnerUsers: null,
         currentPartnerReferrals: null,
@@ -233,6 +263,7 @@ export const useDashboardStore = create<DashboardStore>()(
           get().loadAdminStats(),
           get().loadAllUsers(),
           get().loadAllPartners(),
+          get().loadAllAdmins(),
           get().loadPartnerStats(),
           get().loadCurrentPartnerReferrals(),
         ]
@@ -271,14 +302,20 @@ export const useDashboardStore = create<DashboardStore>()(
       },
 
       // Load all users
-      loadAllUsers: async () => {
+      loadAllUsers: async (params = {}) => {
         set((state) => ({
           loading: { ...state.loading, allUsers: true },
           errors: { ...state.errors, allUsers: null },
         }))
 
         try {
-          const res = await fetch(`${API_BASE_URL}/api/get-all-users`, {
+          const url = new URL(`${API_BASE_URL}/api/get-all-users`)
+          if (params.page) url.searchParams.set('page', String(params.page))
+          if (params.limit) url.searchParams.set('limit', String(params.limit))
+          if (params.status) url.searchParams.set('status', params.status)
+          if (params.region) url.searchParams.set('region', params.region)
+
+          const res = await fetch(url.toString(), {
             credentials: 'include',
           })
 
@@ -301,14 +338,18 @@ export const useDashboardStore = create<DashboardStore>()(
       },
 
       // Load all partners
-      loadAllPartners: async () => {
+      loadAllPartners: async (params = {}) => {
         set((state) => ({
           loading: { ...state.loading, allPartners: true },
           errors: { ...state.errors, allPartners: null },
         }))
 
         try {
-          const res = await fetch(`${API_BASE_URL}/api/get-all-partners`, {
+          const url = new URL(`${API_BASE_URL}/api/get-all-partners`)
+          if (params.page) url.searchParams.set('page', String(params.page))
+          if (params.limit) url.searchParams.set('limit', String(params.limit))
+
+          const res = await fetch(url.toString(), {
             credentials: 'include',
           })
 
@@ -326,6 +367,40 @@ export const useDashboardStore = create<DashboardStore>()(
           set((state) => ({
             loading: { ...state.loading, allPartners: false },
             errors: { ...state.errors, allPartners: error instanceof Error ? error.message : 'Unknown error' },
+          }))
+        }
+      },
+
+      // Load all admins
+      loadAllAdmins: async (params = {}) => {
+        set((state) => ({
+          loading: { ...state.loading, allAdmins: true },
+          errors: { ...state.errors, allAdmins: null },
+        }))
+
+        try {
+          const url = new URL(`${API_BASE_URL}/api/get-all-admins`)
+          if (params.page) url.searchParams.set('page', String(params.page))
+          if (params.limit) url.searchParams.set('limit', String(params.limit))
+
+          const res = await fetch(url.toString(), {
+            credentials: 'include',
+          })
+
+          if (!res.ok) {
+            throw new Error('Failed to fetch admins')
+          }
+
+          const data: AdminsResponse = await res.json()
+
+          set((state) => ({
+            allAdmins: data,
+            loading: { ...state.loading, allAdmins: false },
+          }))
+        } catch (error) {
+          set((state) => ({
+            loading: { ...state.loading, allAdmins: false },
+            errors: { ...state.errors, allAdmins: error instanceof Error ? error.message : 'Unknown error' },
           }))
         }
       },
@@ -361,14 +436,19 @@ export const useDashboardStore = create<DashboardStore>()(
       },
 
       // Load partner users
-      loadPartnerUsers: async (partnerId: string) => {
+      loadPartnerUsers: async (partnerId: string, params = {}) => {
         set((state) => ({
           loading: { ...state.loading, partnerUsers: true },
           errors: { ...state.errors, partnerUsers: null },
         }))
 
         try {
-          const res = await fetch(`${API_BASE_URL}/api/get-partner-users-by-partner?partner_id=${partnerId}`, {
+          const url = new URL(`${API_BASE_URL}/api/get-partner-users-by-partner`)
+          url.searchParams.set('partner_id', partnerId)
+          if (params.page) url.searchParams.set('page', String(params.page))
+          if (params.limit) url.searchParams.set('limit', String(params.limit))
+
+          const res = await fetch(url.toString(), {
             credentials: 'include',
           })
 
@@ -391,14 +471,18 @@ export const useDashboardStore = create<DashboardStore>()(
       },
 
       // Load current partner referrals
-      loadCurrentPartnerReferrals: async () => {
+      loadCurrentPartnerReferrals: async (params = {}) => {
         set((state) => ({
           loading: { ...state.loading, currentPartnerReferrals: true },
           errors: { ...state.errors, currentPartnerReferrals: null },
         }))
 
         try {
-          const res = await fetch(`${API_BASE_URL}/api/get-partner-users-by-partner`, {
+          const url = new URL(`${API_BASE_URL}/api/get-partner-users-by-partner`)
+          if (params.page) url.searchParams.set('page', String(params.page))
+          if (params.limit) url.searchParams.set('limit', String(params.limit))
+
+          const res = await fetch(url.toString(), {
             credentials: 'include',
           })
 
@@ -431,6 +515,7 @@ export const useDashboardStore = create<DashboardStore>()(
           adminStats: null,
           allUsers: null,
           allPartners: null,
+          allAdmins: null,
           partnerStats: null,
           partnerUsers: null,
           currentPartnerReferrals: null,
@@ -438,6 +523,7 @@ export const useDashboardStore = create<DashboardStore>()(
             adminStats: false,
             allUsers: false,
             allPartners: false,
+            allAdmins: false,
             partnerStats: false,
             partnerUsers: false,
             currentPartnerReferrals: false,
@@ -446,6 +532,7 @@ export const useDashboardStore = create<DashboardStore>()(
             adminStats: null,
             allUsers: null,
             allPartners: null,
+            allAdmins: null,
             partnerStats: null,
             partnerUsers: null,
             currentPartnerReferrals: null,

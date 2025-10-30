@@ -39,7 +39,17 @@ export async function GET(req: Request) {
             )
         }
 
-        const upstream = await fetch(url, {
+        const requestUrl = new URL(req.url)
+        const upstreamUrl = new URL(url)
+        
+        // Forward pagination parameters
+        const page = requestUrl.searchParams.get('page')
+        const limit = requestUrl.searchParams.get('limit')
+        
+        if (page) upstreamUrl.searchParams.set('page', page)
+        if (limit) upstreamUrl.searchParams.set('page_size', limit) // API expects page_size, not limit
+
+        const upstream = await fetch(upstreamUrl.toString(), {
             method: "GET",
             headers: {
                 "Content-Type": "application/json",

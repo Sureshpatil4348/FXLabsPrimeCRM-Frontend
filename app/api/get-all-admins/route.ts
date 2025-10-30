@@ -2,7 +2,7 @@ import { NextResponse } from "next/server"
 import { cookies } from "next/headers"
 import { validateCsrfProtection } from "@/lib/csrf"
 
-// GET /api/get-all-users
+// GET /api/get-all-admins
 // Headers sent upstream:
 // - Authorization: <SUPABASE_PROJECT_ANON_KEY> (no Bearer)
 // - Admin-Token: <admin token from cookie or header> (no Bearer)
@@ -13,9 +13,8 @@ export async function GET(req: Request) {
         if (csrfError) return csrfError
 
         const url =
-            process.env.SUPABASE_GET_ALL_USERS_FUNCTION_URL ||
-            process.env.SUPABASE_ALL_GET_USERS_URL ||
-            "https://kyqtnxhgokczatymraxb.supabase.co/functions/v1/get-all-users"
+            process.env.SUPABASE_GET_ALL_ADMINS_FUNCTION_URL ||
+            "https://kyqtnxhgokczatymraxb.supabase.co/functions/v1/get-all-admins"
 
         const anon = process.env.SUPABASE_PROJECT_ANON_KEY || process.env.NEXT_PUBLIC_SUPABASE_PROJECT_ANON_KEY || ""
         if (!anon) {
@@ -43,14 +42,16 @@ export async function GET(req: Request) {
         const requestUrl = new URL(req.url)
         const upstreamUrl = new URL(url)
         
-        // Forward pagination and filter parameters
-        const paramsToForward = ['page', 'limit', 'status', 'region']
-        paramsToForward.forEach(param => {
-            const value = requestUrl.searchParams.get(param)
-            if (value !== null) {
-                upstreamUrl.searchParams.set(param, value)
-            }
-        })
+        // Forward pagination parameters (convert limit to page_size)
+        const page = requestUrl.searchParams.get('page')
+        const limit = requestUrl.searchParams.get('limit')
+        
+        if (page !== null) {
+            upstreamUrl.searchParams.set('page', page)
+        }
+        if (limit !== null) {
+            upstreamUrl.searchParams.set('page_size', limit)
+        }
 
         const upstream = await fetch(upstreamUrl.toString(), {
             method: "GET",
@@ -70,15 +71,16 @@ export async function GET(req: Request) {
                 try { body = await upstream.text() } catch {}
             }
             return NextResponse.json(
-                { message: "Failed to fetch users", status: upstream.status, details: body },
+                { message: "Failed to fetch admins", status: upstream.status, details: body },
                 { status: upstream.status },
             )
         }
 
-        const data = await upstream.json()
-        return NextResponse.json(data)
+    const data = await upstream.json()
+    // Pass-through response expected to look like the new schema provided
+    // { admins: [...], pagination: {...}, filters: { sort_by: string } }
+    return NextResponse.json(data)
     } catch (e) {
         return NextResponse.json({ message: "Unexpected server error" }, { status: 500 })
     }
 }
-
