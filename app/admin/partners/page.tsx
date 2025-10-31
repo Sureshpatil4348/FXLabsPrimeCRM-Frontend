@@ -312,7 +312,12 @@ function PartnersContent() {
         email: editEmail !== editingPartner.email ? editEmail : undefined,
         full_name: editFullName !== editingPartner.full_name ? editFullName : undefined,
         is_active: editIsActive !== editingPartner.is_active ? editIsActive : undefined,
-        commission_percent: editCommissionPercent !== editingPartner.commission_percent?.toString() ? parseFloat(editCommissionPercent) : undefined
+        commission_percent: (() => {
+          const trimmed = editCommissionPercent.trim();
+          if (!trimmed) return null;
+          const parsed = parseFloat(trimmed);
+          return (!isNaN(parsed) && isFinite(parsed) && parsed !== editingPartner.commission_percent) ? parsed : undefined;
+        })()
       }
 
       // Handle commission slabs
