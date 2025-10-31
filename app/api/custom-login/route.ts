@@ -46,7 +46,7 @@ export async function POST(req: Request) {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        Authorization: anon, // NOTE: no "Bearer " prefix per requirement
+        Authorization: anon, // Includes "Bearer " prefix as per standard HTTP auth
       },
       body: JSON.stringify({ email, password, role: inputRole }),
     })

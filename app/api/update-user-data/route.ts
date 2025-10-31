@@ -3,7 +3,7 @@ import { cookies } from "next/headers"
 
 // PATCH /api/update-user-data
 // Headers sent upstream:
-// - Authorization: <SUPABASE_PROJECT_ANON_KEY> (no Bearer)
+// - Authorization: <SUPABASE_PROJECT_ANON_KEY> (includes Bearer prefix)
 // - Admin-Token: <admin token from cookie> (no Bearer)
 export async function PATCH(req: Request) {
   try {

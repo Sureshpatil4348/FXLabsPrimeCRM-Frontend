@@ -176,7 +176,7 @@ export default function AddReferralsPage() {
                   onValueChange={(value) => {
                     setTrialOption(value)
                     if (value !== "custom") {
-                      setFormData({ ...formData, trial_days: parseInt(value) })
+                      setFormData({ ...formData, trial_days: parseInt(value, 10) })
                     } else {
                       setFormData({ ...formData, trial_days: customTrialDays })
                     }
@@ -199,7 +199,7 @@ export default function AddReferralsPage() {
                     max={365}
                     value={customTrialDays}
                     onChange={(e) => {
-                      const val = parseInt(e.target.value) || 1
+                      const val = parseInt(e.target.value, 10) || 1
                       setCustomTrialDays(val)
                       setFormData({ ...formData, trial_days: val })
                     }}

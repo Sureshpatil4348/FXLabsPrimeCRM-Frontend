@@ -29,13 +29,15 @@ const DEFAULT_SLABS: CommissionSlab[] = [
   { from: 5001, to: null, commission: 40 }
 ]
 
+const cloneSlabs = (slabs: CommissionSlab[]) => slabs.map((slab) => ({ ...slab }))
+
 export default function CreatePartnerPage() {
   const router = useRouter()
   const [formData, setFormData] = useState<PartnerFormData>({
     email: "",
     full_name: "",
     commission_slabs: {
-      slabs: DEFAULT_SLABS,
+      slabs: cloneSlabs(DEFAULT_SLABS),
     },
   })
   const [loading, setLoading] = useState(false)
@@ -46,7 +48,7 @@ export default function CreatePartnerPage() {
     const newSlabs = [...formData.commission_slabs.slabs]
     
     if (field === 'to') {
-      const numValue = parseInt(value) || 0
+      const numValue = parseInt(value, 10) || 0
       if (numValue > newSlabs[index].from) {
         newSlabs[index].to = numValue
         
@@ -118,7 +120,7 @@ export default function CreatePartnerPage() {
   }
 
   const removeSlab = (index: number) => {
-    const slabs = formData.commission_slabs.slabs
+    const slabs = formData.commission_slabs.slabs.map((slab) => ({ ...slab }))
     
     // Cannot remove first slab
     if (index === 0) {
@@ -128,9 +130,15 @@ export default function CreatePartnerPage() {
     }
 
     const newSlabs = slabs.filter((_, i) => i !== index)
-    
-    // If we removed the last slab, make the new last slab unlimited
-    if (index === slabs.length - 1 && newSlabs.length > 0) {
+
+    // Normalize remaining slabs to keep them contiguous
+    for (let i = 0; i < newSlabs.length; i++) {
+      if (i > 0) {
+        const prevUpper = newSlabs[i - 1].to ?? newSlabs[i - 1].from
+        newSlabs[i].from = prevUpper + 1
+      }
+    }
+    if (newSlabs.length > 0) {
       newSlabs[newSlabs.length - 1].to = null
     }
 
@@ -172,9 +180,7 @@ export default function CreatePartnerPage() {
 
       if (!res.ok) {
         const err = await res.json()
-        console.log("API Error Response:", err)
         const errorMessage = err.error || "Failed to create partner"
-        console.log("Setting error message:", errorMessage)
         setMessage(errorMessage)
         setMessageType('error')
         return
@@ -189,7 +195,7 @@ export default function CreatePartnerPage() {
         email: "",
         full_name: "",
         commission_slabs: {
-          slabs: DEFAULT_SLABS,
+          slabs: cloneSlabs(DEFAULT_SLABS),
         },
       })
     } catch (err) {

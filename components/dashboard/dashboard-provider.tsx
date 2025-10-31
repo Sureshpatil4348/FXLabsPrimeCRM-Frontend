@@ -27,19 +27,14 @@ export function DashboardProvider({ children }: DashboardProviderProps) {
 
     // Only preload data if user is logged in
     if (session?.email) {
-      console.log('[DashboardProvider] Preloading dashboard data...')
-      preloadAllData().then(() => {
-        console.log('[DashboardProvider] Dashboard data preloaded successfully')
-      }).catch((error) => {
+      preloadAllData().catch((error) => {
         console.error('[DashboardProvider] Failed to preload dashboard data:', error)
       })
     }
   }, [preloadAllData])
 
   const refreshData = async () => {
-    console.log('[DashboardProvider] Refreshing dashboard data...')
     await refreshAllData()
-    console.log('[DashboardProvider] Dashboard data refreshed')
   }
 
   return (

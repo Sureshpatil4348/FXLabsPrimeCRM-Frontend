@@ -4,7 +4,7 @@ import { validateOrigin } from "@/lib/csrf"
 
 // POST /api/create-partner
 // Headers upstream:
-// - Authorization: SUPABASE_PROJECT_ANON_KEY (no Bearer)
+// - Authorization: SUPABASE_PROJECT_ANON_KEY (includes Bearer prefix)
 // - Admin-Token: value from cookie/header (no Bearer)
 export async function POST(req: Request) {
   try {
@@ -42,6 +42,28 @@ export async function POST(req: Request) {
     // Validate commission_slabs structure
     if (!commission_slabs || !commission_slabs.slabs || commission_slabs.slabs.length === 0) {
       return NextResponse.json({ error: "Commission slabs are required" }, { status: 400 })
+    }
+
+    // Validate slab values
+    for (let i = 0; i < commission_slabs.slabs.length; i++) {
+      const slab = commission_slabs.slabs[i]
+      
+      if (typeof slab.from !== 'number' || slab.from < 0) {
+        return NextResponse.json({ error: `Invalid 'from' value in slab ${i + 1}` }, { status: 400 })
+      }
+      
+      if (slab.to !== null && (typeof slab.to !== 'number' || slab.to <= slab.from)) {
+        return NextResponse.json({ error: `Invalid 'to' value in slab ${i + 1}` }, { status: 400 })
+      }
+      
+      if (typeof slab.commission !== 'number' || slab.commission < 0 || slab.commission > 100) {
+        return NextResponse.json({ error: `Commission must be between 0 and 100 in slab ${i + 1}` }, { status: 400 })
+      }
+      
+      // Validate contiguity (except for first slab)
+      if (i > 0 && commission_slabs.slabs[i - 1].to !== slab.from) {
+        return NextResponse.json({ error: `Slabs must be contiguous (gap at slab ${i + 1})` }, { status: 400 })
+      }
     }
 
     // Basic email format validation

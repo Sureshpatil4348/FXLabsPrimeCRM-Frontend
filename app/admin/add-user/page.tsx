@@ -92,6 +92,15 @@ export default function AddUserPage() {
       return
     }
 
+    // Validate custom trial days
+    if (trialOption === "custom") {
+      if (formData.trial_days < 0 || formData.trial_days > 365) {
+        setError("Trial days must be between 0 and 365")
+        setLoading(false)
+        return
+      }
+    }
+
     const users = emailStrings.map((email) => ({ email }))
 
     try {
@@ -238,7 +247,7 @@ export default function AddUserPage() {
                 onValueChange={(value) => {
                   setTrialOption(value)
                   if (value !== "custom") {
-                    setFormData({ ...formData, trial_days: parseInt(value) })
+                    setFormData({ ...formData, trial_days: parseInt(value, 10) })
                   } else {
                     setFormData({ ...formData, trial_days: customTrialDays })
                   }
@@ -261,7 +270,7 @@ export default function AddUserPage() {
                   max={365}
                   value={customTrialDays}
                   onChange={(e) => {
-                    const val = parseInt(e.target.value) || 1
+                    const val = parseInt(e.target.value, 10) || 1
                     setCustomTrialDays(val)
                     setFormData({ ...formData, trial_days: val })
                   }}

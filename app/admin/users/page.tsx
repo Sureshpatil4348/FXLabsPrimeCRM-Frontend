@@ -201,7 +201,8 @@ function UsersContent() {
   }
 
   // Filter users based on search query and status filter
-  const filteredUsers = allUsers?.users.filter((u) => {
+  const users = allUsers?.users ?? []
+  const filteredUsers = users.filter((u) => {
     const query = searchQuery.toLowerCase()
     let matchesSearch = true
 
@@ -243,7 +244,7 @@ function UsersContent() {
     } else {
       return bValue - aValue
     }
-  }) || []
+  })
 
   // Only show skeleton on initial load, not on pagination
   if (loading.allUsers && !allUsers) {

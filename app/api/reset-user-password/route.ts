@@ -3,15 +3,28 @@ import { cookies } from "next/headers"
 
 // POST /api/reset-user-password
 // Headers sent upstream:
-// - Authorization: <SUPABASE_PROJECT_ANON_KEY> (no Bearer)
+// - Authorization: <SUPABASE_PROJECT_ANON_KEY> (includes Bearer prefix)
 // - Admin-Token: <admin token from cookie> (no Bearer)
 export async function POST(req: Request) {
   try {
     const body = await req.json()
+    
+    // Validate required fields for password reset
+    if (!body.email || typeof body.email !== 'string') {
+      return NextResponse.json({ error: "Missing or invalid email field" }, { status: 400 })
+    }
 
-    const url =
-      process.env.SUPABASE_RESET_USER_PASSWORD_FUNCTION_URL ||
-      "https://hyajwhtkwldrmlhfiuwg.supabase.co/functions/v1/crm_reset-user-password"
+    // Basic email format validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+    if (!emailRegex.test(body.email)) {
+      return NextResponse.json({ error: "Invalid email format" }, { status: 400 })
+    }
+
+    const url = process.env.SUPABASE_RESET_USER_PASSWORD_FUNCTION_URL
+    
+    if (!url) {
+      return NextResponse.json({ error: "Server not configured: missing SUPABASE_RESET_USER_PASSWORD_FUNCTION_URL" }, { status: 500 })
+    }
 
     const anon = process.env.SUPABASE_PROJECT_ANON_KEY || process.env.NEXT_PUBLIC_SUPABASE_PROJECT_ANON_KEY || ""
     if (!anon) {
