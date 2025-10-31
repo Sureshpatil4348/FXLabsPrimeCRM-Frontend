@@ -361,8 +361,8 @@ function PartnersContent() {
       }
 
       // Check if there are any changes
-      const hasChanges = Object.values(updateData).some(value =>
-        value !== undefined && value !== null
+      const hasChanges = Object.entries(updateData).some(([key, value]) =>
+        key !== "partner_id" && value !== undefined && value !== null
       )
 
       if (!hasChanges) {

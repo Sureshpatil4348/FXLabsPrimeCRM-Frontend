@@ -30,8 +30,14 @@ export async function PATCH(req: Request) {
       return NextResponse.json({ error: "At least one field (email or full_name) must be provided for update" }, { status: 400 });
     }
 
-    const url = process.env.SUPABASE_UPDATE_ADMIN_DATA_FUNCTION_URL ||
-      "https://hyajwhtkwldrmlhfiuwg.supabase.co/functions/v1/crm_update-admin-data";
+    const url = process.env.SUPABASE_UPDATE_ADMIN_DATA_FUNCTION_URL;
+
+    if (!url) {
+      return NextResponse.json(
+        { error: "Server not configured: missing SUPABASE_UPDATE_ADMIN_DATA_FUNCTION_URL" },
+        { status: 500 }
+      );
+    }
 
     const anon = process.env.SUPABASE_PROJECT_ANON_KEY || process.env.NEXT_PUBLIC_SUPABASE_PROJECT_ANON_KEY || "";
     if (!anon) {
