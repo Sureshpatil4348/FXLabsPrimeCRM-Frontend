@@ -3,6 +3,7 @@ import { cookies } from "next/headers";
 import { validateOrigin } from "@/lib/csrf";
 
 // PATCH /api/update-admin-data
+// Updates admin name and email only (no password changes)
 // Headers sent upstream:
 // - Authorization: <SUPABASE_PROJECT_ANON_KEY> (includes Bearer prefix)
 // - Admin-Token: <admin token from cookie> (no Bearer)
@@ -13,12 +14,10 @@ export async function PATCH(req: Request) {
     if (originError) return originError;
 
     const body = await req.json();
-    const { existing_email, email, full_name, current_password, new_password } = body as {
+    const { existing_email, email, full_name } = body as {
       existing_email?: string;
       email?: string;
       full_name?: string;
-      current_password?: string;
-      new_password?: string;
     };
 
     // Basic validation
@@ -27,13 +26,8 @@ export async function PATCH(req: Request) {
     }
 
     // Check if at least one field to update is provided
-    if (!email && !full_name && !new_password) {
-      return NextResponse.json({ error: "At least one field must be provided for update" }, { status: 400 });
-    }
-
-    // Validate password change requirements
-    if (new_password && !current_password) {
-      return NextResponse.json({ error: "Current password is required when changing password" }, { status: 400 });
+    if (!email && !full_name) {
+      return NextResponse.json({ error: "At least one field (email or full_name) must be provided for update" }, { status: 400 });
     }
 
     const url = process.env.SUPABASE_UPDATE_ADMIN_DATA_FUNCTION_URL ||

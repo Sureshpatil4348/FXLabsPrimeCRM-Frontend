@@ -220,17 +220,26 @@ function PartnersContent() {
       }
     })
 
-    // Check for overlapping ranges only for slabs that have values
-    const filledSlabs = slabs.filter(slab => slab.min_revenue || slab.max_revenue || slab.commission_percent)
-    for (let i = 0; i < filledSlabs.length - 1; i++) {
-      const currentMax = filledSlabs[i].max_revenue ? parseFloat(filledSlabs[i].max_revenue) : null
-      const nextMin = parseFloat(filledSlabs[i + 1].min_revenue)
-
-      if (currentMax !== null && nextMin <= currentMax) {
-        const currentIndex = slabs.indexOf(filledSlabs[i])
-        const nextIndex = slabs.indexOf(filledSlabs[i + 1])
-        errors[`slab_${currentIndex}_overlap`] = "Commission slabs cannot overlap"
-        errors[`slab_${nextIndex}_overlap`] = "Commission slabs cannot overlap"
+    // Check for overlapping ranges - compare all pairs
+    const filledSlabsWithIndex = slabs
+      .map((slab, index) => ({ slab, index }))
+      .filter(({ slab }) => slab.min_revenue || slab.max_revenue || slab.commission_percent)
+    
+    for (let i = 0; i < filledSlabsWithIndex.length; i++) {
+      const { slab: slabA, index: indexA } = filledSlabsWithIndex[i]
+      const minA = parseFloat(slabA.min_revenue)
+      const maxA = slabA.max_revenue ? parseFloat(slabA.max_revenue) : Infinity
+      
+      for (let j = i + 1; j < filledSlabsWithIndex.length; j++) {
+        const { slab: slabB, index: indexB } = filledSlabsWithIndex[j]
+        const minB = parseFloat(slabB.min_revenue)
+        const maxB = slabB.max_revenue ? parseFloat(slabB.max_revenue) : Infinity
+        
+        // Check if ranges overlap (use < for exclusive boundaries)
+        if (minA < maxB && minB < maxA) {
+          errors[`slab_${indexA}_overlap`] = "Commission slabs cannot overlap"
+          errors[`slab_${indexB}_overlap`] = "Commission slabs cannot overlap"
+        }
       }
     }
 
@@ -334,7 +343,14 @@ function PartnersContent() {
         }))
 
         const existingSlabs = editingPartner.commission_slabs?.slabs || []
-        const slabsChanged = JSON.stringify(processedSlabs) !== JSON.stringify(existingSlabs)
+        const slabsChanged = processedSlabs.length !== existingSlabs.length ||
+          processedSlabs.some((newSlab, idx) => {
+            const existingSlab = existingSlabs[idx]
+            return !existingSlab ||
+              newSlab.min_revenue !== existingSlab.min_revenue ||
+              newSlab.max_revenue !== existingSlab.max_revenue ||
+              newSlab.commission_percent !== existingSlab.commission_percent
+          })
 
         if (slabsChanged) {
           updateData.commission_slabs = { slabs: processedSlabs }

@@ -2,6 +2,12 @@ import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { validateOrigin } from "@/lib/csrf";
 
+type CommissionSlab = {
+  min_revenue: number;
+  max_revenue: number | null;
+  commission_percent: number;
+};
+
 // PATCH /api/update-partner-data
 // Headers sent upstream:
 // - Authorization: <SUPABASE_PROJECT_ANON_KEY> (includes Bearer prefix)
@@ -19,7 +25,9 @@ export async function PATCH(req: Request) {
       full_name?: string;
       is_active?: boolean;
       commission_percent?: number;
-      commission_slabs?: any;
+      commission_slabs?: {
+        slabs: Array<CommissionSlab>
+      };
     };
 
     // Basic validation

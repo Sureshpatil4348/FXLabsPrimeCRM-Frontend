@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server"
 import { cookies } from "next/headers"
+import { validateOrigin } from "@/lib/csrf"
 
 // PATCH /api/update-user-data
 // Headers sent upstream:
@@ -7,6 +8,10 @@ import { cookies } from "next/headers"
 // - Admin-Token: <admin token from cookie> (no Bearer)
 export async function PATCH(req: Request) {
   try {
+    // Origin validation for state-changing requests
+    const originError = validateOrigin(req);
+    if (originError) return originError;
+
     const body = await req.json()
 
     const url =

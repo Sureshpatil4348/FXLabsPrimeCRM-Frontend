@@ -24,10 +24,6 @@ function AdminsContent() {
   const [editingAdmin, setEditingAdmin] = useState<any>(null)
   const [editEmail, setEditEmail] = useState("")
   const [editFullName, setEditFullName] = useState("")
-  const [currentPassword, setCurrentPassword] = useState("")
-  const [newPassword, setNewPassword] = useState("")
-  const [confirmPassword, setConfirmPassword] = useState("")
-  const [isChangingPassword, setIsChangingPassword] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
 
   // Validation state
@@ -150,18 +146,6 @@ function AdminsContent() {
     const fullNameError = validateFullName(editFullName)
     if (fullNameError) errors.fullName = fullNameError
 
-    if (isChangingPassword) {
-      const currentPasswordError = validatePassword(currentPassword, "Current password")
-      if (currentPasswordError) errors.currentPassword = currentPasswordError
-
-      const newPasswordError = validatePassword(newPassword, "New password")
-      if (newPasswordError) errors.newPassword = newPasswordError
-
-      if (newPassword && confirmPassword && newPassword !== confirmPassword) {
-        errors.confirmPassword = "Passwords do not match"
-      }
-    }
-
     setValidationErrors(errors)
     return Object.keys(errors).length === 0
   }
@@ -171,10 +155,6 @@ function AdminsContent() {
     setEditingAdmin(admin)
     setEditEmail(admin.email || "")
     setEditFullName(admin.full_name || "")
-    setCurrentPassword("")
-    setNewPassword("")
-    setConfirmPassword("")
-    setIsChangingPassword(false)
     setValidationErrors({})
   }
 
@@ -182,10 +162,6 @@ function AdminsContent() {
     setEditingAdmin(null)
     setEditEmail("")
     setEditFullName("")
-    setCurrentPassword("")
-    setNewPassword("")
-    setConfirmPassword("")
-    setIsChangingPassword(false)
     setIsSubmitting(false)
     setValidationErrors({})
   }
@@ -217,12 +193,6 @@ function AdminsContent() {
       // Handle full name update
       if (editFullName !== editingAdmin.full_name) {
         updateData.full_name = editFullName
-      }
-
-      // Handle password update
-      if (isChangingPassword && newPassword) {
-        updateData.current_password = currentPassword
-        updateData.new_password = newPassword
       }
 
       // Check if there are any changes
@@ -452,79 +422,6 @@ function AdminsContent() {
                 />
                 {validationErrors.fullName && (
                   <p className="text-red-500 text-xs mt-1">{validationErrors.fullName}</p>
-                )}
-              </div>
-
-              <div className="border-t pt-4">
-                <div className="flex items-center justify-between mb-4">
-                  <Label className="block text-sm font-medium text-foreground">Change Password</Label>
-                  <input
-                    type="checkbox"
-                    checked={isChangingPassword}
-                    onChange={(e) => setIsChangingPassword(e.target.checked)}
-                    className="rounded border-border"
-                  />
-                </div>
-
-                {isChangingPassword && (
-                  <div className="space-y-4">
-                    <div>
-                      <Label className="block text-sm font-medium text-foreground mb-2">Current Password</Label>
-                      <Input
-                        type="password"
-                        value={currentPassword}
-                        onChange={(e) => {
-                          setCurrentPassword(e.target.value)
-                          if (validationErrors.currentPassword) {
-                            setValidationErrors(prev => ({ ...prev, currentPassword: "" }))
-                          }
-                        }}
-                        placeholder="Enter current password"
-                        className={`bg-background border-border ${validationErrors.currentPassword ? 'border-red-500' : ''}`}
-                      />
-                      {validationErrors.currentPassword && (
-                        <p className="text-red-500 text-xs mt-1">{validationErrors.currentPassword}</p>
-                      )}
-                    </div>
-
-                    <div>
-                      <Label className="block text-sm font-medium text-foreground mb-2">New Password</Label>
-                      <Input
-                        type="password"
-                        value={newPassword}
-                        onChange={(e) => {
-                          setNewPassword(e.target.value)
-                          if (validationErrors.newPassword) {
-                            setValidationErrors(prev => ({ ...prev, newPassword: "" }))
-                          }
-                        }}
-                        placeholder="Enter new password"
-                        className={`bg-background border-border ${validationErrors.newPassword ? 'border-red-500' : ''}`}
-                      />
-                      {validationErrors.newPassword && (
-                        <p className="text-red-500 text-xs mt-1">{validationErrors.newPassword}</p>
-                      )}
-                    </div>
-
-                    <div>
-                      <Label className="block text-sm font-medium text-foreground mb-2">Confirm New Password</Label>
-                      <Input
-                        type="password"
-                        value={confirmPassword}
-                        onChange={(e) => {
-                          setConfirmPassword(e.target.value)
-                          if (validationErrors.confirmPassword) {
-                            setValidationErrors(prev => ({ ...prev, confirmPassword: "" }))
-                          }
-                        }}
-                        placeholder="Confirm new password"
-                        className={`bg-background border-border ${validationErrors.confirmPassword ? 'border-red-500' : ''}`}
-                      />
-                      {validationErrors.confirmPassword && (
-                        <p className="text-red-500 text-xs mt-1">{validationErrors.confirmPassword}</p>
-                      )}
-                    </div>
-                  </div>
                 )}
               </div>
             </div>
