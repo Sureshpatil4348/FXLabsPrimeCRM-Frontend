@@ -8,7 +8,7 @@ import { validateOrigin } from "@/lib/csrf"
 // - Admin-Token: <admin token from cookie> (no Bearer)
 export async function POST(req: Request) {
   try {
-    // Origin validation for state-changing requests
+    // Origin validation for state-changing request
     const originError = validateOrigin(req);
     if (originError) return originError;
 
@@ -16,7 +16,7 @@ export async function POST(req: Request) {
     
     // Validate required fields for password reset
     if (!body.email || typeof body.email !== 'string') {
-      return NextResponse.json({ error: "Missing or invalid email field" }, { status: 400 })
+      return NextResponse.json({ error: "Missing or invalid email field!" }, { status: 400 })
     }
 
     // Basic email format validation
