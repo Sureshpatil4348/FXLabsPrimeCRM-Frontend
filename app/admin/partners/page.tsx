@@ -314,7 +314,10 @@ function PartnersContent() {
         is_active: editIsActive !== editingPartner.is_active ? editIsActive : undefined,
         commission_percent: (() => {
           const trimmed = editCommissionPercent.trim();
-          if (!trimmed) return null;
+          if (!trimmed) {
+            // Only send null to clear if there was a previous value
+            return editingPartner.commission_percent != null ? null : undefined;
+          }
           const parsed = parseFloat(trimmed);
           return (!isNaN(parsed) && isFinite(parsed) && parsed !== editingPartner.commission_percent) ? parsed : undefined;
         })()
@@ -367,7 +370,7 @@ function PartnersContent() {
 
       // Check if there are any changes
       const hasChanges = Object.entries(updateData).some(([key, value]) =>
-        key !== "partner_id" && value !== undefined && value !== null
+        key !== "partner_id" && value !== undefined
       )
 
       if (!hasChanges) {
