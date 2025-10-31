@@ -157,7 +157,7 @@ function AdminStatsContent() {
       {/* Additional Info */}
       <div className="text-sm text-muted-foreground">
         <p>Last updated: {new Date(adminStats.generated_at).toLocaleString()}</p>
-        <p>Currency: {adminStats.revenue.currency.toUpperCase()}</p>
+        {/* <p>Currency: {adminStats.revenue.currency.toUpperCase()}</p> */}
       </div>
 
       {/* Users by Region */}

@@ -48,6 +48,8 @@ export default function AddUserPage() {
   const [success, setSuccess] = useState<CreateUserResponse | null>(null)
   const [csvFile, setCsvFile] = useState<File | null>(null)
   const [csvEmails, setCsvEmails] = useState<string[]>([])
+  const [trialOption, setTrialOption] = useState<string>("30")
+  const [customTrialDays, setCustomTrialDays] = useState<number>(30)
 
   const previewEmails = useMemo(() => {
     const fromText = formData.emails
@@ -90,6 +92,15 @@ export default function AddUserPage() {
       return
     }
 
+    // Validate custom trial days
+    if (trialOption === "custom") {
+      if (formData.trial_days < 0 || formData.trial_days > 365) {
+        setError("Trial days must be between 0 and 365")
+        setLoading(false)
+        return
+      }
+    }
+
     const users = emailStrings.map((email) => ({ email }))
 
     try {
@@ -106,6 +117,8 @@ export default function AddUserPage() {
       const data: CreateUserResponse = await response.json()
       setSuccess(data)
       setFormData({ emails: "", region: "India", trial_days: 30 })
+      setTrialOption("30")
+      setCustomTrialDays(30)
       setCsvFile(null)
       setCsvEmails([])
     } catch (err) {
@@ -229,15 +242,44 @@ export default function AddUserPage() {
 
             <div className="space-y-2">
               <Label htmlFor="trial_days">Trial Days</Label>
-              <Input
-                id="trial_days"
-                type="number"
-                min={1}
-                max={365}
-                value={formData.trial_days}
-                onChange={(e) => setFormData({ ...formData, trial_days: parseInt(e.target.value, 10) || 30 })}
-                placeholder="30"
-              />
+              <Select
+                value={trialOption}
+                onValueChange={(value) => {
+                  setTrialOption(value)
+                  if (value !== "custom") {
+                    setFormData({ ...formData, trial_days: parseInt(value, 10) })
+                  } else {
+                    setFormData({ ...formData, trial_days: customTrialDays })
+                  }
+                }}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select trial days" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="30">30 days</SelectItem>
+                  <SelectItem value="60">60 days</SelectItem>
+                  <SelectItem value="90">90 days</SelectItem>
+                  <SelectItem value="custom">Custom</SelectItem>
+                </SelectContent>
+              </Select>
+              {trialOption === "custom" && (
+                <Input
+                  type="number"
+                  min={1}
+                  max={365}
+                  value={customTrialDays}
+                  onChange={(e) => {
+                    const val = parseInt(e.target.value, 10) || 1
+                    setCustomTrialDays(val)
+                    setFormData({ ...formData, trial_days: val })
+                  }}
+                  placeholder="Enter custom days"
+                />
+              )}
+              {trialOption === "custom" && (
+                <p className="text-sm text-muted-foreground">Enter a number between 1 and 365 days.</p>
+              )}
             </div>
 
             <div className="space-y-2">

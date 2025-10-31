@@ -1,5 +1,6 @@
 import { create } from 'zustand'
 import { devtools } from 'zustand/middleware'
+import { PAGINATION_LIMIT } from './pagination'
 
 export interface AdminStats {
   revenue: {
@@ -261,11 +262,11 @@ export const useDashboardStore = create<DashboardStore>()(
       preloadAllData: async () => {
         const promises = [
           get().loadAdminStats(),
-          get().loadAllUsers(),
-          get().loadAllPartners(),
-          get().loadAllAdmins(),
+          get().loadAllUsers({ page: 1, limit: PAGINATION_LIMIT }),
+          get().loadAllPartners({ page: 1, limit: PAGINATION_LIMIT }),
+          get().loadAllAdmins({ page: 1, limit: PAGINATION_LIMIT }),
           get().loadPartnerStats(),
-          get().loadCurrentPartnerReferrals(),
+          get().loadCurrentPartnerReferrals({ page: 1, limit: PAGINATION_LIMIT }),
         ]
 
         await Promise.allSettled(promises)
