@@ -30,6 +30,10 @@ function PartnersContent() {
   const [modalPaginationLoading, setModalPaginationLoading] = useState(false)
   const { toast } = useToast()
 
+  // Sorting state
+  const [sortBy, setSortBy] = useState<string>("created_at")
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc")
+
   // Edit modal state
   const [editingPartner, setEditingPartner] = useState<any>(null)
   const [editEmail, setEditEmail] = useState("")
@@ -566,6 +570,39 @@ function PartnersContent() {
           <CardDescription>A list of all partners in the system.</CardDescription>
         </CardHeader>
         <CardContent>
+          {/* Sorting Controls */}
+          <div className="flex gap-3 mb-4 flex-wrap">
+            <select
+              value={sortBy}
+              onChange={(e) => setSortBy(e.target.value)}
+              className="px-3 py-2 border border-border rounded-md bg-background text-sm"
+            >
+              <option value="created_at">Sort by Created At</option>
+            </select>
+
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setSortOrder(sortOrder === "asc" ? "desc" : "asc")}
+              className="px-3"
+            >
+              {sortOrder === "asc" ? "↑ Old to New" : "↓ New to Old"}
+            </Button>
+
+            {(sortBy !== "created_at" || sortOrder !== "desc") && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  setSortBy("created_at")
+                  setSortOrder("desc")
+                }}
+              >
+                Clear Sort and Filter
+              </Button>
+            )}
+          </div>
+
           <Table>
             <TableHeader>
               <TableRow>
@@ -581,7 +618,23 @@ function PartnersContent() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {allPartners.partners.map((partner) => (
+              {allPartners.partners
+                .sort((a, b) => {
+                  let aValue: any
+                  let bValue: any
+
+                  if (sortBy === "created_at") {
+                    aValue = a.created_at ? new Date(a.created_at).getTime() : 0
+                    bValue = b.created_at ? new Date(b.created_at).getTime() : 0
+                  }
+
+                  if (sortOrder === "asc") {
+                    return aValue - bValue
+                  } else {
+                    return bValue - aValue
+                  }
+                })
+                .map((partner) => (
                 <TableRow key={partner.partner_id}>
                   <TableCell className="font-medium">
                     <button
