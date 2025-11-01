@@ -169,6 +169,8 @@ export default function CreatePartnerPage() {
     setMessage(null)
     setMessageType(null)
 
+    //console.log('DEBUG: Sending formData:', formData)
+
     try {
       const res = await fetch("/api/create-partner", {
         method: "POST",
@@ -180,6 +182,7 @@ export default function CreatePartnerPage() {
 
       if (!res.ok) {
         const err = await res.json()
+        //console.log('DEBUG: API error response:', err)
         const errorMessage = err.error || "Failed to create partner"
         setMessage(errorMessage)
         setMessageType('error')
@@ -187,6 +190,7 @@ export default function CreatePartnerPage() {
       }
 
       const data = await res.json()
+      //console.log('DEBUG: API success response:', data)
       setMessage(data.message || `Partner ${formData.full_name} created with ${formData.email}`)
       setMessageType('success')
 
@@ -199,6 +203,7 @@ export default function CreatePartnerPage() {
         },
       })
     } catch (err) {
+      //console.log('DEBUG: Fetch error:', err)
       setMessage("Unable to create partner. Please try again.")
       setMessageType('error')
     } finally {
