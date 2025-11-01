@@ -10,7 +10,7 @@ import { Input } from "@/components/ui/input"
 import { Switch } from "@/components/ui/switch"
 import { Label } from "@/components/ui/label"
 import { Plus, Trash2 } from "lucide-react"
-import { RefreshCw, AlertCircle, ChevronLeft, ChevronRight, Copy, Check, Edit, X } from "lucide-react"
+import { RefreshCw, AlertCircle, ChevronLeft, ChevronRight, Copy, Check, Edit, X, Eye } from "lucide-react"
 import { useState, useEffect } from "react"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
@@ -30,6 +30,10 @@ function PartnersContent() {
   const [modalPaginationLoading, setModalPaginationLoading] = useState(false)
   const { toast } = useToast()
 
+  // Sorting state
+  const [sortBy, setSortBy] = useState<string>("created_at")
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc")
+
   // Edit modal state
   const [editingPartner, setEditingPartner] = useState<any>(null)
   const [editEmail, setEditEmail] = useState("")
@@ -41,6 +45,9 @@ function PartnersContent() {
 
   // Validation state
   const [validationErrors, setValidationErrors] = useState<{[key: string]: string}>({})
+
+  // View slabs modal state
+  const [viewingSlabs, setViewingSlabs] = useState<any>(null)
 
   useEffect(() => {
     // Always load data with pagination on mount or when page changes
@@ -150,9 +157,9 @@ function PartnersContent() {
     setEditCommissionPercent(partner.commission_percent?.toString() || "")
     // Convert existing slabs to string format for input fields
     setEditCommissionSlabs((partner.commission_slabs?.slabs || []).map((slab: any) => ({
-      min_revenue: slab.min_revenue?.toString() || "",
-      max_revenue: slab.max_revenue?.toString() || "",
-      commission_percent: slab.commission_percent?.toString() || ""
+      min_revenue: slab.from?.toString() || "",
+      max_revenue: slab.to?.toString() || "",
+      commission_percent: slab.commission?.toString() || ""
     })))
     setValidationErrors({})
   }
@@ -345,9 +352,9 @@ function PartnersContent() {
         }
 
         const processedSlabs = filledSlabs.map(slab => ({
-          min_revenue: parseFloat(slab.min_revenue),
-          max_revenue: slab.max_revenue ? parseFloat(slab.max_revenue) : null,
-          commission_percent: parseFloat(slab.commission_percent)
+          from: parseFloat(slab.min_revenue),
+          to: slab.max_revenue ? parseFloat(slab.max_revenue) : null,
+          commission: parseFloat(slab.commission_percent)
         }))
 
         const existingSlabs = editingPartner.commission_slabs?.slabs || []
@@ -355,9 +362,9 @@ function PartnersContent() {
           processedSlabs.some((newSlab, idx) => {
             const existingSlab = existingSlabs[idx]
             return !existingSlab ||
-              newSlab.min_revenue !== existingSlab.min_revenue ||
-              newSlab.max_revenue !== existingSlab.max_revenue ||
-              newSlab.commission_percent !== existingSlab.commission_percent
+              newSlab.from !== existingSlab.from ||
+              newSlab.to !== existingSlab.to ||
+              newSlab.commission !== existingSlab.commission
           })
 
         if (slabsChanged) {
@@ -563,12 +570,46 @@ function PartnersContent() {
           <CardDescription>A list of all partners in the system.</CardDescription>
         </CardHeader>
         <CardContent>
+          {/* Sorting Controls */}
+          <div className="flex gap-3 mb-4 flex-wrap">
+            <select
+              value={sortBy}
+              onChange={(e) => setSortBy(e.target.value)}
+              className="px-3 py-2 border border-border rounded-md bg-background text-sm"
+            >
+              <option value="created_at">Sort by Created At</option>
+            </select>
+
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setSortOrder(sortOrder === "asc" ? "desc" : "asc")}
+              className="px-3"
+            >
+              {sortOrder === "asc" ? "↑ Old to New" : "↓ New to Old"}
+            </Button>
+
+            {(sortBy !== "created_at" || sortOrder !== "desc") && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  setSortBy("created_at")
+                  setSortOrder("desc")
+                }}
+              >
+                Clear Sort and Filter
+              </Button>
+            )}
+          </div>
+
           <Table>
             <TableHeader>
               <TableRow>
                 <TableHead>Name</TableHead>
                 <TableHead>Email</TableHead>
-                <TableHead>Commission %</TableHead>
+                <TableHead>Current Commission %</TableHead>
+                <TableHead>Active</TableHead>
                 <TableHead>Total Revenue</TableHead>
                 <TableHead>Total Added</TableHead>
                 <TableHead>Total Converted</TableHead>
@@ -577,7 +618,23 @@ function PartnersContent() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {allPartners.partners.map((partner) => (
+              {allPartners.partners
+                .sort((a, b) => {
+                  let aValue: any
+                  let bValue: any
+
+                  if (sortBy === "created_at") {
+                    aValue = a.created_at ? new Date(a.created_at).getTime() : 0
+                    bValue = b.created_at ? new Date(b.created_at).getTime() : 0
+                  }
+
+                  if (sortOrder === "asc") {
+                    return aValue - bValue
+                  } else {
+                    return bValue - aValue
+                  }
+                })
+                .map((partner) => (
                 <TableRow key={partner.partner_id}>
                   <TableCell className="font-medium">
                     <button
@@ -605,20 +662,36 @@ function PartnersContent() {
                     </div>
                   </TableCell>
                   <TableCell>{partner.commission_percent}%</TableCell>
+                  <TableCell>
+                    <Badge variant={(partner as any).is_active ? "default" : "destructive"} className="w-12 justify-center">
+                      {(partner as any).is_active ? "Yes" : "No"}
+                    </Badge>
+                  </TableCell>
                   <TableCell>{currency(partner.total_revenue || 0)}</TableCell>
                   <TableCell>{partner.total_added || 0}</TableCell>
                   <TableCell>{partner.total_converted || 0}</TableCell>
                   <TableCell>{partner.created_at ? new Date(partner.created_at).toLocaleDateString() : "-"}</TableCell>
                   <TableCell>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="flex items-center gap-2"
-                      onClick={() => handleEditClick(partner)}
-                    >
-                      <Edit className="h-4 w-4" />
-                      Edit
-                    </Button>
+                    <div className="flex gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setViewingSlabs(partner)}
+                        className="flex items-center gap-2"
+                      >
+                        <Eye className="h-4 w-4" />
+                        View Slabs
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleEditClick(partner)}
+                        className="flex items-center gap-2"
+                      >
+                        <Edit className="h-4 w-4" />
+                        Edit
+                      </Button>
+                    </div>
                   </TableCell>
                 </TableRow>
               ))}
@@ -999,6 +1072,71 @@ function PartnersContent() {
                 className="flex-1"
               >
                 {isSubmitting ? "Saving..." : "Save Changes"}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* View Slabs Modal */}
+      {viewingSlabs && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 animate-in fade-in duration-200">
+          {/* Backdrop */}
+          <div
+            className="absolute inset-0 bg-black/20 backdrop-blur-sm transition-opacity"
+            onClick={() => setViewingSlabs(null)}
+          />
+
+          {/* Modal Content */}
+          <div className="relative z-10 w-full max-w-2xl bg-white border border-border rounded-lg shadow-lg animate-in fade-in zoom-in-95 duration-200">
+            {/* Header */}
+            <div className="flex items-center justify-between p-6 border-b border-border">
+              <div>
+                <h2 className="text-lg font-semibold">Commission Slabs</h2>
+                <p className="text-sm text-muted-foreground">{(viewingSlabs as any).full_name} - {(viewingSlabs as any).email}</p>
+              </div>
+              <button
+                onClick={() => setViewingSlabs(null)}
+                className="text-muted-foreground hover:text-foreground transition-colors p-1 hover:bg-muted rounded-md"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Content */}
+            <div className="p-6">
+              {(viewingSlabs as any).commission_slabs?.slabs?.length > 0 ? (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Revenue Range</TableHead>
+                      <TableHead>Commission %</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {(viewingSlabs as any).commission_slabs.slabs.map((slab: any, index: number) => (
+                      <TableRow key={index}>
+                        <TableCell>
+                          {slab.from || 0} - {slab.to || "∞"}
+                        </TableCell>
+                        <TableCell>{slab.commission}%</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              ) : (
+                <div className="text-center text-muted-foreground py-8">
+                  No commission slabs configured for this partner.
+                </div>
+              )}
+            </div>
+
+            {/* Footer */}
+            <div className="flex justify-end p-6 border-t border-border bg-muted/30">
+              <Button
+                onClick={() => setViewingSlabs(null)}
+              >
+                Close
               </Button>
             </div>
           </div>

@@ -26,7 +26,7 @@ export function Sidebar({ role, open, onClose }: SidebarProps) {
     { href: "/admin/create-partner", label: "Create Partner", icon: UserPlus },
     
     { href: "/admin/create-admin", label: "Create Admin", icon: Shield },
-    { href: "/admin/partner-users", label: "Get Users by Partner", icon: UserCheck },
+    // { href: "/admin/partner-users", label: "Get Users by Partner", icon: UserCheck },
   ]
 
   const partnerItems = [
