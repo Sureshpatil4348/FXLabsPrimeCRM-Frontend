@@ -10,7 +10,7 @@ import { Input } from "@/components/ui/input"
 import { Switch } from "@/components/ui/switch"
 import { Label } from "@/components/ui/label"
 import { Plus, Trash2 } from "lucide-react"
-import { RefreshCw, AlertCircle, ChevronLeft, ChevronRight, Copy, Check, Edit, X, Eye } from "lucide-react"
+import { RefreshCw, AlertCircle, ChevronLeft, ChevronRight, Copy, Check, Edit, X, Eye, RotateCcw } from "lucide-react"
 import { useState, useEffect } from "react"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
@@ -48,6 +48,10 @@ function PartnersContent() {
 
   // View slabs modal state
   const [viewingSlabs, setViewingSlabs] = useState<any>(null)
+
+  // Reset password state
+  const [resettingPasswordPartnerEmail, setResettingPasswordPartnerEmail] = useState<string | null>(null)
+  const [isResettingPassword, setIsResettingPassword] = useState(false)
 
   useEffect(() => {
     // Always load data with pagination on mount or when page changes
@@ -430,6 +434,70 @@ function PartnersContent() {
     }
   }
 
+  const handleResetPassword = async (partner: any) => {
+    setResettingPasswordPartnerEmail(partner.email)
+  }
+
+  const handleConfirmResetPassword = async () => {
+    if (!resettingPasswordPartnerEmail) return
+
+    setIsResettingPassword(true)
+    try {
+      const response = await fetch("/api/reset-partner-password", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          email: resettingPasswordPartnerEmail
+        })
+      })
+
+      const data = await response.json()
+
+      if (!response.ok && response.status !== 207) {
+        toast({
+          title: "Error",
+          description: data.error || "Failed to reset password",
+          variant: "destructive"
+        })
+        return
+      }
+
+      // 207 means password reset but email failed
+      if (response.status === 207) {
+        toast({
+          title: "Warning",
+          description: data.message || "Password reset but email could not be sent",
+          variant: "default"
+        })
+      } else {
+        toast({
+          title: "Success",
+          description: "Password reset successfully. Email sent to partner.",
+          variant: "default"
+        })
+      }
+
+      setResettingPasswordPartnerEmail(null)
+      // Reload the current page data
+      await loadAllPartners({ page: currentPage, limit: PAGINATION_LIMIT })
+    } catch (error) {
+      console.error("Error resetting partner password:", error)
+      toast({
+        title: "Error",
+        description: "Failed to reset password. Please try again.",
+        variant: "destructive"
+      })
+    } finally {
+      setIsResettingPassword(false)
+    }
+  }
+
+  const handleCancelResetPassword = () => {
+    setResettingPasswordPartnerEmail(null)
+  }
+
   const getStatusBadgeVariant = (status: string) => {
     switch (status) {
       case "trial":
@@ -606,6 +674,7 @@ function PartnersContent() {
           <Table>
             <TableHeader>
               <TableRow>
+                <TableHead>Reset Password</TableHead>
                 <TableHead>Name</TableHead>
                 <TableHead>Email</TableHead>
                 <TableHead>Current Commission %</TableHead>
@@ -636,6 +705,18 @@ function PartnersContent() {
                 })
                 .map((partner) => (
                 <TableRow key={partner.partner_id}>
+                  <TableCell>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleResetPassword(partner)}
+                      disabled={isResettingPassword}
+                      className="flex items-center gap-2"
+                    >
+                      <RotateCcw className="h-4 w-4" />
+                      Reset Password
+                    </Button>
+                  </TableCell>
                   <TableCell className="font-medium">
                     <button
                       onClick={() => partner.email && openPartnerUsersModal(partner.email)}
@@ -1137,6 +1218,64 @@ function PartnersContent() {
                 onClick={() => setViewingSlabs(null)}
               >
                 Close
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Reset Password Confirmation Dialog */}
+      {resettingPasswordPartnerEmail && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 animate-in fade-in duration-200">
+          {/* Backdrop */}
+          <div
+            className="absolute inset-0 bg-black/20 backdrop-blur-sm transition-opacity"
+            onClick={handleCancelResetPassword}
+          />
+
+          {/* Modal Content */}
+          <div className="relative z-10 w-full max-w-md bg-white border border-border rounded-lg shadow-lg animate-in fade-in zoom-in-95 duration-200">
+            {/* Header */}
+            <div className="flex items-center justify-between p-6 border-b border-border">
+              <h2 className="text-lg font-semibold">Reset Partner Password</h2>
+              <button
+                onClick={handleCancelResetPassword}
+                className="text-muted-foreground hover:text-foreground transition-colors p-1 hover:bg-muted rounded-md"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Content */}
+            <div className="p-6 space-y-4">
+              <div className="p-4 bg-amber-50 border border-amber-200 rounded-lg">
+                <p className="text-sm text-amber-900">
+                  <span className="font-semibold">⚠️ Warning:</span> This will generate a new temporary password and send it to the partner via email. The partner will need to log in with the new password.
+                </p>
+              </div>
+
+              <p className="text-sm text-muted-foreground">
+                Are you sure you want to reset the password for <strong>{resettingPasswordPartnerEmail}</strong>? They will receive an email with their new temporary password.
+              </p>
+            </div>
+
+            {/* Footer */}
+            <div className="flex gap-3 p-6 border-t border-border bg-muted/30">
+              <Button
+                variant="outline"
+                onClick={handleCancelResetPassword}
+                disabled={isResettingPassword}
+                className="flex-1"
+              >
+                Cancel
+              </Button>
+              <Button
+                variant="destructive"
+                onClick={handleConfirmResetPassword}
+                disabled={isResettingPassword}
+                className="flex-1"
+              >
+                {isResettingPassword ? "Resetting..." : "Reset Password"}
               </Button>
             </div>
           </div>
