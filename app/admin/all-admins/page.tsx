@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { PartnersTableSkeleton } from "@/components/dashboard/skeleton-table"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
-import { RefreshCw, AlertCircle, ChevronLeft, ChevronRight, Copy, Check, Edit, X } from "lucide-react"
+import { RefreshCw, AlertCircle, ChevronLeft, ChevronRight, Copy, Check, Edit, X, RotateCcw } from "lucide-react"
 import { useState, useEffect } from "react"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Input } from "@/components/ui/input"
@@ -28,6 +28,10 @@ function AdminsContent() {
 
   // Validation state
   const [validationErrors, setValidationErrors] = useState<{[key: string]: string}>({})
+
+  // Reset password state
+  const [resettingPasswordAdminEmail, setResettingPasswordAdminEmail] = useState<string | null>(null)
+  const [isResettingPassword, setIsResettingPassword] = useState(false)
 
   useEffect(() => {
     // Always load data with pagination on mount or when page changes
@@ -248,6 +252,70 @@ function AdminsContent() {
     }
   }
 
+  const handleResetPassword = async (admin: any) => {
+    setResettingPasswordAdminEmail(admin.email)
+  }
+
+  const handleConfirmResetPassword = async () => {
+    if (!resettingPasswordAdminEmail) return
+
+    setIsResettingPassword(true)
+    try {
+      const response = await fetch("/api/reset-admin-password", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          email: resettingPasswordAdminEmail
+        })
+      })
+
+      const data = await response.json()
+
+      if (!response.ok && response.status !== 207) {
+        toast({
+          title: "Error",
+          description: data.error || "Failed to reset password",
+          variant: "destructive"
+        })
+        return
+      }
+
+      // 207 means password reset but email failed
+      if (response.status === 207) {
+        toast({
+          title: "Warning",
+          description: data.message || "Password reset but email could not be sent",
+          variant: "default"
+        })
+      } else {
+        toast({
+          title: "Success",
+          description: "Password reset successfully. Email sent to admin.",
+          variant: "default"
+        })
+      }
+
+      setResettingPasswordAdminEmail(null)
+      // Reload the current page data
+      await loadAllAdmins({ page: currentPage, limit: PAGINATION_LIMIT })
+    } catch (error) {
+      console.error("Error resetting admin password:", error)
+      toast({
+        title: "Error",
+        description: "Failed to reset password. Please try again.",
+        variant: "destructive"
+      })
+    } finally {
+      setIsResettingPassword(false)
+    }
+  }
+
+  const handleCancelResetPassword = () => {
+    setResettingPasswordAdminEmail(null)
+  }
+
   // Calculate statistics from the admins data
   const totalAdmins = allAdmins.pagination.total
 
@@ -285,6 +353,7 @@ function AdminsContent() {
           <Table>
             <TableHeader>
               <TableRow>
+                <TableHead>Reset Password</TableHead>
                 <TableHead>Name</TableHead>
                 <TableHead>Email</TableHead>
                 <TableHead>Created</TableHead>
@@ -294,6 +363,18 @@ function AdminsContent() {
             <TableBody>
               {allAdmins.admins.map((admin) => (
                 <TableRow key={admin.email}>
+                  <TableCell>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleResetPassword(admin)}
+                      disabled={isResettingPassword}
+                      className="flex items-center gap-2"
+                    >
+                      <RotateCcw className="h-4 w-4" />
+                      Reset Password
+                    </Button>
+                  </TableCell>
                   <TableCell className="font-medium">{admin.full_name || "-"}</TableCell>
                   <TableCell>{admin.email}</TableCell>
                   <TableCell>{admin.created_at ? new Date(admin.created_at).toLocaleDateString() : "-"}</TableCell>
@@ -442,6 +523,64 @@ function AdminsContent() {
                 className="flex-1"
               >
                 {isSubmitting ? "Saving..." : "Save Changes"}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Reset Password Confirmation Dialog */}
+      {resettingPasswordAdminEmail && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 animate-in fade-in duration-200">
+          {/* Backdrop */}
+          <div
+            className="absolute inset-0 bg-black/20 backdrop-blur-sm transition-opacity"
+            onClick={handleCancelResetPassword}
+          />
+
+          {/* Modal Content */}
+          <div className="relative z-10 w-full max-w-md bg-white border border-border rounded-lg shadow-lg animate-in fade-in zoom-in-95 duration-200">
+            {/* Header */}
+            <div className="flex items-center justify-between p-6 border-b border-border">
+              <h2 className="text-lg font-semibold">Reset Admin Password</h2>
+              <button
+                onClick={handleCancelResetPassword}
+                className="text-muted-foreground hover:text-foreground transition-colors p-1 hover:bg-muted rounded-md"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Content */}
+            <div className="p-6 space-y-4">
+              <div className="p-4 bg-amber-50 border border-amber-200 rounded-lg">
+                <p className="text-sm text-amber-900">
+                  <span className="font-semibold">⚠️ Warning:</span> This will generate a new temporary password and send it to the admin via email. The admin will need to log in with the new password.
+                </p>
+              </div>
+
+              <p className="text-sm text-muted-foreground">
+                Are you sure you want to reset the password for <strong>{resettingPasswordAdminEmail}</strong>? They will receive an email with their new temporary password.
+              </p>
+            </div>
+
+            {/* Footer */}
+            <div className="flex gap-3 p-6 border-t border-border bg-muted/30">
+              <Button
+                variant="outline"
+                onClick={handleCancelResetPassword}
+                disabled={isResettingPassword}
+                className="flex-1"
+              >
+                Cancel
+              </Button>
+              <Button
+                variant="destructive"
+                onClick={handleConfirmResetPassword}
+                disabled={isResettingPassword}
+                className="flex-1"
+              >
+                {isResettingPassword ? "Resetting..." : "Reset Password"}
               </Button>
             </div>
           </div>
