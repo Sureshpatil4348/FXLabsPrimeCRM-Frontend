@@ -21,6 +21,7 @@ function UsersContent() {
   const [searchQuery, setSearchQuery] = useState("")
   const [searchField, setSearchField] = useState<string>("all")
   const [filterStatus, setFilterStatus] = useState<string>("all")
+  const [filterBlocked, setFilterBlocked] = useState<string>("all")
   const [sortBy, setSortBy] = useState<string>("created_at")
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc")
   
@@ -232,7 +233,14 @@ function UsersContent() {
     
     const matchesStatus = filterStatus === "all" || u.subscription_status === filterStatus
     
-    return matchesSearch && matchesStatus
+    let matchesBlocked = true
+    if (filterBlocked === "blocked") {
+      matchesBlocked = u.is_blocked === true
+    } else if (filterBlocked === "unblocked") {
+      matchesBlocked = u.is_blocked === false
+    }
+    
+    return matchesSearch && matchesStatus && matchesBlocked
   }).sort((a, b) => {
     let aValue: any
     let bValue: any
@@ -352,6 +360,16 @@ function UsersContent() {
             </select>
 
             <select
+              value={filterBlocked}
+              onChange={(e) => setFilterBlocked(e.target.value)}
+              className="px-3 py-2 border border-border rounded-md bg-background text-sm"
+            >
+              <option value="all">All Users</option>
+              <option value="blocked">Blocked</option>
+              <option value="unblocked">Unblocked</option>
+            </select>
+
+            <select
               value={sortBy}
               onChange={(e) => setSortBy(e.target.value)}
               className="px-3 py-2 border border-border rounded-md bg-background text-sm"
@@ -369,7 +387,7 @@ function UsersContent() {
               {sortOrder === "asc" ? "↑" : "↓"}
             </Button>
 
-            {(searchQuery || searchField !== "all" || filterStatus !== "all" || sortBy !== "created_at" || sortOrder !== "desc") && (
+            {(searchQuery || searchField !== "all" || filterStatus !== "all" || filterBlocked !== "all" || sortBy !== "created_at" || sortOrder !== "desc") && (
               <Button
                 variant="outline"
                 size="sm"
@@ -377,6 +395,7 @@ function UsersContent() {
                   setSearchQuery("")
                   setSearchField("all")
                   setFilterStatus("all")
+                  setFilterBlocked("all")
                   setSortBy("created_at")
                   setSortOrder("desc")
                 }}
