@@ -6,6 +6,7 @@ import { UsersTableSkeleton } from "@/components/dashboard/skeleton-table"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { Switch } from "@/components/ui/switch"
 import { RefreshCw, AlertCircle, ChevronLeft, ChevronRight, Edit, RotateCcw, Search, X } from "lucide-react"
 import { useState, useEffect, useRef } from "react"
 import { useToast } from "@/hooks/use-toast"
@@ -28,6 +29,7 @@ function UsersContent() {
   const [editEmail, setEditEmail] = useState("")
   const [editRegion, setEditRegion] = useState("")
   const [editSubscriptionDate, setEditSubscriptionDate] = useState("")
+  const [editIsBlocked, setEditIsBlocked] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [selectedQuickDays, setSelectedQuickDays] = useState<number | null>(null)
 
@@ -68,6 +70,7 @@ function UsersContent() {
     setEditEmail(user.email || "")
     setEditRegion(user.region || "")
     setEditSubscriptionDate(user.subscription_ends_at || "")
+    setEditIsBlocked(Boolean(user.is_blocked))
   }
 
   const handleCloseEdit = () => {
@@ -75,6 +78,7 @@ function UsersContent() {
     setEditEmail("")
     setEditRegion("")
     setEditSubscriptionDate("")
+    setEditIsBlocked(false)
     setIsSubmitting(false)
     setSelectedQuickDays(null)
   }
@@ -101,6 +105,8 @@ function UsersContent() {
           email: editEmail !== editingUser.email ? editEmail : undefined,
           region: editRegion !== editingUser.region ? editRegion : undefined,
           subscription_ends_at: editSubscriptionDate !== editingUser.subscription_ends_at ? editSubscriptionDate : undefined
+            ,
+            is_blocked: editIsBlocked !== Boolean(editingUser.is_blocked) ? editIsBlocked : undefined
         })
       })
 
@@ -390,10 +396,11 @@ function UsersContent() {
                 <th className="px-4 py-2 font-medium">Subscription Status</th>
                 <th className="px-4 py-2 font-medium">Subscription Ends At</th>
                 <th className="px-4 py-2 font-medium">Total Spent</th>
-                <th className="px-4 py-2 font-medium">Converted At</th>
-                <th className="px-4 py-2 font-medium">Created At</th>
+                <th className="px-4 py-2 font-medium">Is Blocked</th>
                 <th className="px-4 py-2 font-medium">Partner Email</th>
                 <th className="px-4 py-2 font-medium">Partner Name</th>
+                <th className="px-4 py-2 font-medium">Converted At</th>
+                <th className="px-4 py-2 font-medium">Created At</th>
               </tr>
             </thead>
             <tbody>
@@ -429,18 +436,29 @@ function UsersContent() {
                     </td>
                     <td className="px-4 py-2">${u.total_spent.toFixed(2)}</td>
                     <td className="px-4 py-2">
+                      {u.is_blocked ? (
+                        <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                          Yes
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                          No
+                        </span>
+                      )}
+                    </td>
+                    <td className="px-4 py-2">{u.partner?.email ?? "-"}</td>
+                    <td className="px-4 py-2">{u.partner?.full_name ?? "-"}</td>
+                    <td className="px-4 py-2">
                       {u.converted_at ? new Date(u.converted_at).toLocaleString() : "-"}
                     </td>
                     <td className="px-4 py-2">
                       {u.created_at ? new Date(u.created_at).toLocaleString() : "-"}
                     </td>
-                    <td className="px-4 py-2">{u.partner?.email ?? "-"}</td>
-                    <td className="px-4 py-2">{u.partner?.full_name ?? "-"}</td>
                   </tr>
                 ))
               ) : (
                 <tr>
-                  <td colSpan={10} className="px-4 py-8 text-center text-muted-foreground">
+                  <td colSpan={11} className="px-4 py-8 text-center text-muted-foreground">
                     No users found matching your search or filters
                   </td>
                 </tr>
@@ -566,6 +584,14 @@ function UsersContent() {
                   </p>
                 </div>
               )}
+
+              <div>
+                <label className="flex items-center gap-3">
+                  <span className="text-sm font-medium text-foreground">Is Blocked</span>
+                  <Switch checked={editIsBlocked} onCheckedChange={(val) => setEditIsBlocked(Boolean(val))} />
+                </label>
+                <p className="text-sm text-muted-foreground mt-1">Toggle to block or unblock this user.</p>
+              </div>
             </div>
 
             {/* Footer */}

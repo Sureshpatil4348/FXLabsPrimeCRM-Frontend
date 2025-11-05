@@ -36,6 +36,7 @@ export interface User {
   total_spent: number
   converted_at: string | null
   created_at: string | null
+  is_blocked: boolean
   partner: { email: string | null; full_name: string | null } | null
 }
 
