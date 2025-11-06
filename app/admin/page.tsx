@@ -118,6 +118,11 @@ function AdminStatsContent() {
           value={adminStats.users.recent_users_30_days} 
           info="Number of new users who registered in the last 30 days."
         />
+        <StatsCardWithInfo 
+          label="Blocked Users" 
+          value={adminStats.users.total_blocked} 
+          info="Users who have been blocked and cannot access the platform."
+        />
         
         {/* Revenue & Commission Cards */}
         <StatsCardWithInfo 

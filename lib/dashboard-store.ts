@@ -14,6 +14,7 @@ export interface AdminStats {
     total_paid: number
     total_active: number
     total_expired: number
+    total_blocked: number
     total_users_by_region: Record<string, number>
     recent_users_30_days: number
   }
@@ -36,6 +37,7 @@ export interface User {
   total_spent: number
   converted_at: string | null
   created_at: string | null
+  is_blocked: boolean
   partner: { email: string | null; full_name: string | null } | null
 }
 
