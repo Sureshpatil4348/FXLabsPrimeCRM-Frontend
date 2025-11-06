@@ -11,7 +11,7 @@ export default function HomePage() {
   const router = useRouter()
 
   useEffect(() => {
-    // Check if user is already logged in
+    // Check if user is already logged in ///
     const session = getSession()
     if (session) {
       // Redirect to appropriate dashboard based on role
