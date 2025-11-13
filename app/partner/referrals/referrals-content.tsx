@@ -158,7 +158,7 @@ export default function ReferralsContentClient() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All statuses</SelectItem>
-                <SelectItem value="trial">Trial</SelectItem>
+                <SelectItem value="trial">Free</SelectItem>
                 <SelectItem value="paid">Paid</SelectItem>
                 <SelectItem value="expired">Expired</SelectItem>
               </SelectContent>
@@ -186,7 +186,7 @@ export default function ReferralsContentClient() {
                       <td className="py-2 pr-4">{user.region || "—"}</td>
                       <td className="py-2 pr-4">
                         <Badge variant={getStatusBadgeVariant(user.subscription_status)}>
-                          {user.subscription_status}
+                          {user.subscription_status === "trial" ? "free" : user.subscription_status}
                         </Badge>
                       </td>
                       <td className="py-2 pr-4">

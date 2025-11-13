@@ -43,8 +43,8 @@ export async function GET(req: Request) {
         const requestUrl = new URL(req.url)
         const upstreamUrl = new URL(url)
         
-        // Forward pagination and filter parameters
-        const paramsToForward = ['page', 'limit', 'status', 'region']
+        // Forward pagination, filter, search and sort parameters
+        const paramsToForward = ['page', 'limit', 'status', 'region', 'blocked', 'search', 'search_field', 'sort_by', 'sort_order']
         paramsToForward.forEach(param => {
             const value = requestUrl.searchParams.get(param)
             if (value !== null) {
