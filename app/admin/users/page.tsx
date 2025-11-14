@@ -19,6 +19,7 @@ function UsersContent() {
   const [currentPage, setCurrentPage] = useState(1)
   const [paginationLoading, setPaginationLoading] = useState(false)
   const [searchQuery, setSearchQuery] = useState("")
+  const [appliedSearchQuery, setAppliedSearchQuery] = useState("")
   const [searchField, setSearchField] = useState<string>("all")
   const [filterStatus, setFilterStatus] = useState<string>("all")
   const [filterBlocked, setFilterBlocked] = useState<string>("all")
@@ -39,17 +40,28 @@ function UsersContent() {
   const [isResettingPassword, setIsResettingPassword] = useState(false)
 
   useEffect(() => {
-    // Always load data with pagination on mount or when page changes
+    // Load data with all filters whenever dependencies change
     const loadData = async () => {
       setPaginationLoading(true)
       try {
-        await loadAllUsers({ page: currentPage, limit: PAGINATION_LIMIT })
+        const params: any = { page: currentPage, limit: PAGINATION_LIMIT }
+        
+        if (filterStatus && filterStatus !== "all") params.status = filterStatus
+        if (filterBlocked && filterBlocked !== "all") params.blocked = filterBlocked
+        if (appliedSearchQuery) {
+          params.search = appliedSearchQuery
+          params.search_field = searchField
+        }
+        params.sort_by = sortBy
+        params.sort_order = sortOrder
+        
+        await loadAllUsers(params)
       } finally {
         setPaginationLoading(false)
       }
     }
     loadData()
-  }, [currentPage]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [currentPage, filterStatus, filterBlocked, appliedSearchQuery, searchField, sortBy, sortOrder]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const handlePageChange = (page: number) => {
     // Block pagination while loading to prevent race conditions
@@ -63,6 +75,34 @@ function UsersContent() {
     // Only update if the clamped page differs from current page
     if (clamped !== currentPage) {
       setCurrentPage(clamped)
+    }
+  }
+
+  const handleSearch = () => {
+    setAppliedSearchQuery(searchQuery)
+    setCurrentPage(1) // Reset to first page when searching
+  }
+
+  const handleClearSearch = () => {
+    setSearchQuery("")
+    setAppliedSearchQuery("")
+    setCurrentPage(1)
+  }
+
+  const handleClearAllFilters = () => {
+    setSearchQuery("")
+    setAppliedSearchQuery("")
+    setSearchField("all")
+    setFilterStatus("all")
+    setFilterBlocked("all")
+    setSortBy("created_at")
+    setSortOrder("desc")
+    setCurrentPage(1)
+  }
+
+  const handleKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter") {
+      handleSearch()
     }
   }
 
@@ -129,8 +169,17 @@ function UsersContent() {
       })
 
       handleCloseEdit()
-      // Reload the current page data
-      await loadAllUsers({ page: currentPage, limit: PAGINATION_LIMIT })
+      // Reload the current page data with filters
+      const params: any = { page: currentPage, limit: PAGINATION_LIMIT }
+      if (filterStatus && filterStatus !== "all") params.status = filterStatus
+      if (filterBlocked && filterBlocked !== "all") params.blocked = filterBlocked
+      if (appliedSearchQuery) {
+        params.search = appliedSearchQuery
+        params.search_field = searchField
+      }
+      params.sort_by = sortBy
+      params.sort_order = sortOrder
+      await loadAllUsers(params)
     } catch (error) {
       console.error("Error updating user:", error)
       toast({
@@ -189,8 +238,17 @@ function UsersContent() {
       }
 
       setResettingPasswordUserId(null)
-      // Reload the current page data
-      await loadAllUsers({ page: currentPage, limit: PAGINATION_LIMIT })
+      // Reload the current page data with filters
+      const params: any = { page: currentPage, limit: PAGINATION_LIMIT }
+      if (filterStatus && filterStatus !== "all") params.status = filterStatus
+      if (filterBlocked && filterBlocked !== "all") params.blocked = filterBlocked
+      if (appliedSearchQuery) {
+        params.search = appliedSearchQuery
+        params.search_field = searchField
+      }
+      params.sort_by = sortBy
+      params.sort_order = sortOrder
+      await loadAllUsers(params)
     } catch (error) {
       console.error("Error resetting password:", error)
       toast({
@@ -207,58 +265,8 @@ function UsersContent() {
     setResettingPasswordUserId(null)
   }
 
-  // Filter users based on search query and status filter
-  const users = allUsers?.users ?? []
-  const filteredUsers = users.filter((u) => {
-    const query = searchQuery.toLowerCase()
-    let matchesSearch = true
-
-    if (searchQuery) {
-      if (searchField === "all") {
-        matchesSearch = 
-          (u.email?.toLowerCase().includes(query) ?? false) ||
-          (u.region?.toLowerCase().includes(query) ?? false) ||
-          (u.partner?.email?.toLowerCase().includes(query) ?? false) ||
-          (u.partner?.full_name?.toLowerCase().includes(query) ?? false)
-      } else if (searchField === "email") {
-        matchesSearch = u.email?.toLowerCase().includes(query) ?? false
-      } else if (searchField === "region") {
-        matchesSearch = u.region?.toLowerCase().includes(query) ?? false
-      } else if (searchField === "partner_email") {
-        matchesSearch = u.partner?.email?.toLowerCase().includes(query) ?? false
-      } else if (searchField === "partner_name") {
-        matchesSearch = u.partner?.full_name?.toLowerCase().includes(query) ?? false
-      }
-    }
-    
-    const matchesStatus = filterStatus === "all" || u.subscription_status === filterStatus
-    
-    let matchesBlocked = true
-    if (filterBlocked === "blocked") {
-      matchesBlocked = u.is_blocked === true
-    } else if (filterBlocked === "unblocked") {
-      matchesBlocked = u.is_blocked === false
-    }
-    
-    return matchesSearch && matchesStatus && matchesBlocked
-  }).sort((a, b) => {
-    let aValue: any
-    let bValue: any
-
-    if (sortBy === "subscription_ends_at") {
-      aValue = a.subscription_ends_at ? new Date(a.subscription_ends_at).getTime() : 0
-      bValue = b.subscription_ends_at ? new Date(b.subscription_ends_at).getTime() : 0
-    } else if (sortBy === "created_at") {
-      aValue = a.created_at ? new Date(a.created_at).getTime() : 0
-      bValue = b.created_at ? new Date(b.created_at).getTime() : 0
-    }
-
-    if (sortOrder === "asc") {
-      return aValue - bValue
-    } else {
-      return bValue - aValue
-    }
-  })
+  // Users are now filtered and sorted server-side
+  const filteredUsers = allUsers?.users ?? []
 
   // Only show skeleton on initial load, not on pagination
   if (loading.allUsers && !allUsers) {
@@ -275,7 +283,18 @@ function UsersContent() {
             variant="outline"
             size="sm"
             className="ml-2"
-            onClick={() => loadAllUsers({ page: currentPage, limit: PAGINATION_LIMIT })}
+            onClick={() => {
+              const params: any = { page: currentPage, limit: PAGINATION_LIMIT }
+              if (filterStatus && filterStatus !== "all") params.status = filterStatus
+              if (filterBlocked && filterBlocked !== "all") params.blocked = filterBlocked
+              if (appliedSearchQuery) {
+                params.search = appliedSearchQuery
+                params.search_field = searchField
+              }
+              params.sort_by = sortBy
+              params.sort_order = sortOrder
+              loadAllUsers(params)
+            }}
           >
             <RefreshCw className="w-4 h-4 mr-1" />
             Retry
@@ -290,7 +309,7 @@ function UsersContent() {
       <div className="flex items-center justify-center h-64">
         <div className="text-center">
           <p className="text-gray-500 mb-4">No user data available</p>
-          <Button onClick={() => loadAllUsers({ page: 1, limit: PAGINATION_LIMIT })}>
+          <Button onClick={() => loadAllUsers({ page: 1, limit: PAGINATION_LIMIT, sort_by: "created_at", sort_order: "desc" })}>
             <RefreshCw className="w-4 h-4 mr-2" />
             Load Users
           </Button>
@@ -309,7 +328,18 @@ function UsersContent() {
           </p>
         </div>
         <Button
-          onClick={() => loadAllUsers({ page: currentPage, limit: PAGINATION_LIMIT })}
+          onClick={() => {
+            const params: any = { page: currentPage, limit: PAGINATION_LIMIT }
+            if (filterStatus && filterStatus !== "all") params.status = filterStatus
+            if (filterBlocked && filterBlocked !== "all") params.blocked = filterBlocked
+            if (appliedSearchQuery) {
+              params.search = appliedSearchQuery
+              params.search_field = searchField
+            }
+            params.sort_by = sortBy
+            params.sort_order = sortOrder
+            loadAllUsers(params)
+          }}
           variant="outline"
           size="sm"
           className="flex items-center gap-2"
@@ -339,13 +369,37 @@ function UsersContent() {
               </select>
               
               <div className="flex-1 relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                 <Input
                   placeholder="Search..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-10"
+                  onKeyPress={handleKeyPress}
+                  className="pr-20"
                 />
+                <div className="absolute right-1 top-1/2 transform -translate-y-1/2 flex gap-1">
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="ghost"
+                    onClick={handleSearch}
+                    className="h-8 w-8 p-0"
+                    title="Search"
+                  >
+                    <Search className="w-4 h-4" />
+                  </Button>
+                  {searchQuery && (
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="ghost"
+                      onClick={handleClearSearch}
+                      className="h-8 w-8 p-0"
+                      title="Clear search"
+                    >
+                      <X className="w-4 h-4" />
+                    </Button>
+                  )}
+                </div>
               </div>
             </div>
             
@@ -355,8 +409,9 @@ function UsersContent() {
               className="px-3 py-2 border border-border rounded-md bg-background text-sm"
             >
               <option value="all">All Status</option>
-              <option value="active">Active</option>
-              <option value="inactive">Inactive</option>
+              <option value="trial">Free</option>
+              <option value="paid">Paid</option>
+              <option value="expired">Expired</option>
             </select>
 
             <select
@@ -387,18 +442,11 @@ function UsersContent() {
               {sortOrder === "asc" ? "↑" : "↓"}
             </Button>
 
-            {(searchQuery || searchField !== "all" || filterStatus !== "all" || filterBlocked !== "all" || sortBy !== "created_at" || sortOrder !== "desc") && (
+            {(appliedSearchQuery || searchField !== "all" || filterStatus !== "all" || filterBlocked !== "all" || sortBy !== "created_at" || sortOrder !== "desc") && (
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => {
-                  setSearchQuery("")
-                  setSearchField("all")
-                  setFilterStatus("all")
-                  setFilterBlocked("all")
-                  setSortBy("created_at")
-                  setSortOrder("desc")
-                }}
+                onClick={handleClearAllFilters}
               >
                 Clear Filters
               </Button>
@@ -449,7 +497,7 @@ function UsersContent() {
                     </td>
                     <td className="px-4 py-2">{u.email ?? "-"}</td>
                     <td className="px-4 py-2">{u.region ?? "-"}</td>
-                    <td className="px-4 py-2">{u.subscription_status ?? "-"}</td>
+                    <td className="px-4 py-2">{u.subscription_status === "trial" ? "free" : u.subscription_status ?? "-"}</td>
                     <td className="px-4 py-2">
                       {u.subscription_ends_at ? new Date(u.subscription_ends_at).toLocaleString() : "-"}
                     </td>

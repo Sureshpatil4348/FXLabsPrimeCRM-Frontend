@@ -54,6 +54,11 @@ export interface UsersResponse {
   filters_applied: {
     status: string | null
     region: string | null
+    blocked: string | null
+    search_query: string | null
+    search_field: string | null
+    sort_by: string
+    sort_order: string
   }
 }
 
@@ -216,7 +221,7 @@ interface DashboardStore {
   // Actions
   preloadAllData: () => Promise<void>
   loadAdminStats: () => Promise<void>
-  loadAllUsers: (params?: { page?: number; limit?: number; status?: string; region?: string }) => Promise<void>
+  loadAllUsers: (params?: { page?: number; limit?: number; status?: string; region?: string; blocked?: string; search?: string; search_field?: string; sort_by?: string; sort_order?: string }) => Promise<void>
   loadAllPartners: (params?: { page?: number; limit?: number }) => Promise<void>
   loadAllAdmins: (params?: { page?: number; limit?: number }) => Promise<void>
   loadPartnerStats: () => Promise<void>
@@ -317,6 +322,11 @@ export const useDashboardStore = create<DashboardStore>()(
           if (params.limit) url.searchParams.set('limit', String(params.limit))
           if (params.status) url.searchParams.set('status', params.status)
           if (params.region) url.searchParams.set('region', params.region)
+          if (params.blocked) url.searchParams.set('blocked', params.blocked)
+          if (params.search) url.searchParams.set('search', params.search)
+          if (params.search_field) url.searchParams.set('search_field', params.search_field)
+          if (params.sort_by) url.searchParams.set('sort_by', params.sort_by)
+          if (params.sort_order) url.searchParams.set('sort_order', params.sort_order)
 
           const res = await fetch(url.toString(), {
             credentials: 'include',
